@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authenticateUser, ROLE_LABELS, getCurrentUser } from "../../../shared/data/userStorage";
+import PasswordRecoveryModal from "../../../shared/components/auth/PasswordRecoveryModal";
 
 interface LoginPageProps {
   onLogin?: () => void;
@@ -12,6 +13,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showRecovery, setShowRecovery] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,8 +49,20 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
     setPassword(demo.password);
   };
 
+  const handleResetRequested = (token: string, email: string) => {
+    setShowRecovery(false);
+    navigate(`/reset-password?token=${token}`);
+  };
+
   return (
-    <div className="flex min-h-screen font-sans bg-[#f4f7f9]">
+    <>
+      <PasswordRecoveryModal
+        isOpen={showRecovery}
+        onClose={() => setShowRecovery(false)}
+        onResetRequested={handleResetRequested}
+      />
+
+      <div className="flex min-h-screen font-sans bg-[#f4f7f9]">
       {/* Left section: Branding/Hero */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-brand-primary via-[#002a42] to-[#001b2a] flex-col justify-center items-center relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
@@ -112,6 +126,16 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
               </div>
             )}
 
+            <div className="flex items-center justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setShowRecovery(true)}
+                className="text-sm font-medium text-brand-primary hover:text-brand-primary-hover transition-colors"
+              >
+                ¿Olvidaste tu contraseña?
+              </button>
+            </div>
+
             <button
               type="submit"
               disabled={loading}
@@ -159,6 +183,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Layout from "../components/layout/Layout";
 
 import LoginPage from "../modules/auth/pages/LoginPage";
+import ResetPasswordPage from "../modules/auth/pages/ResetPasswordPage";
 import DashboardPage from "../modules/dashboard/pages/DashboardPage";
 
 import seedClients from "../shared/data/seeds/clients.json";
@@ -93,6 +94,11 @@ export default function AppRouter() {
             <LoginPage onLogin={handleLogin} />
           )
         }
+      />
+
+      <Route
+        path="/reset-password"
+        element={<ResetPasswordPage />}
       />
 
       <Route
