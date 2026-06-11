@@ -1,5 +1,6 @@
 import seedUsers from "./seeds/users.json";
 import { canTransitionUserStatus, registerUserStatusChange } from "./userStatusStorage";
+import type { OdiseoUserStatus, SyncStatus, ProfileCode, InternalRoleCode } from "../security/roleProfiles";
 
 const USERS_STORAGE_KEY = "odiseo_users";
 const CURRENT_USER_KEY = "odiseo_current_user";
@@ -25,11 +26,22 @@ export type User = {
   email: string;
   password: string;
   fullName: string;
+  phone?: string;
   role: UserRole;
   status: UserStatus;
   workerCode: string;
   position: string;
   area?: string;
+  areaCode?: string;
+  areaLabel?: string;
+  profileCode?: ProfileCode;
+  profileLabel?: string;
+  roles?: InternalRoleCode[];
+  integralSystemUserId?: string;
+  integralSystemUserValue?: string;
+  integralSystemUserStatus?: string;
+  odiseoUserStatus?: OdiseoUserStatus;
+  syncStatus?: SyncStatus;
   createdAt: string;
 };
 
@@ -253,7 +265,7 @@ export function saveUserRecord(record: User): void {
 }
 
 export function createUser(
-  newUser: Partial<Pick<User, "workerCode" | "position" | "fullName">> &
+  newUser: Partial<Pick<User, "workerCode" | "position" | "fullName" | "phone" | "areaCode" | "areaLabel" | "profileCode" | "profileLabel" | "roles" | "integralSystemUserId" | "integralSystemUserValue" | "integralSystemUserStatus" | "odiseoUserStatus" | "syncStatus">> &
     Omit<
       User,
       | "id"
@@ -262,6 +274,17 @@ export function createUser(
       | "fullName"
       | "workerCode"
       | "position"
+      | "phone"
+      | "areaCode"
+      | "areaLabel"
+      | "profileCode"
+      | "profileLabel"
+      | "roles"
+      | "integralSystemUserId"
+      | "integralSystemUserValue"
+      | "integralSystemUserStatus"
+      | "odiseoUserStatus"
+      | "syncStatus"
     >
 ): User {
   const now = new Date().toISOString();
@@ -280,8 +303,19 @@ export function createUser(
     code: `US-${String(nextNumber).padStart(6, "0")}`,
     email: normalizeEmail(newUser.email),
     fullName: newUser.fullName || "Usuario",
+    phone: newUser.phone,
     workerCode: newUser.workerCode || "",
     position: newUser.position || "",
+    areaCode: newUser.areaCode,
+    areaLabel: newUser.areaLabel,
+    profileCode: newUser.profileCode,
+    profileLabel: newUser.profileLabel,
+    roles: newUser.roles,
+    integralSystemUserId: newUser.integralSystemUserId,
+    integralSystemUserValue: newUser.integralSystemUserValue,
+    integralSystemUserStatus: newUser.integralSystemUserStatus,
+    odiseoUserStatus: newUser.odiseoUserStatus || "PENDIENTE_ACTIVACION",
+    syncStatus: newUser.syncStatus || "PENDIENTE_SINCRONIZACION",
     status: newUser.status || "pending_activation",
     createdAt: now,
   };
@@ -324,6 +358,17 @@ export function updateUser(
     email: updates.email ? normalizeEmail(updates.email) : user.email,
     fullName: updates.fullName || user.fullName,
     status: nextStatus,
+    phone: updates.phone !== undefined ? updates.phone : user.phone,
+    areaCode: updates.areaCode !== undefined ? updates.areaCode : user.areaCode,
+    areaLabel: updates.areaLabel !== undefined ? updates.areaLabel : user.areaLabel,
+    profileCode: updates.profileCode !== undefined ? updates.profileCode : user.profileCode,
+    profileLabel: updates.profileLabel !== undefined ? updates.profileLabel : user.profileLabel,
+    roles: updates.roles !== undefined ? updates.roles : user.roles,
+    integralSystemUserId: updates.integralSystemUserId !== undefined ? updates.integralSystemUserId : user.integralSystemUserId,
+    integralSystemUserValue: updates.integralSystemUserValue !== undefined ? updates.integralSystemUserValue : user.integralSystemUserValue,
+    integralSystemUserStatus: updates.integralSystemUserStatus !== undefined ? updates.integralSystemUserStatus : user.integralSystemUserStatus,
+    odiseoUserStatus: updates.odiseoUserStatus !== undefined ? updates.odiseoUserStatus : user.odiseoUserStatus,
+    syncStatus: updates.syncStatus !== undefined ? updates.syncStatus : user.syncStatus,
   };
 
   saveUserRecord(updated);

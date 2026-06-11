@@ -9,11 +9,16 @@ import {
   findDuplicateUser,
   getNextUserCode,
   getUserByEmail,
+  getAllUsers,
 } from "../../../shared/data/userStorage";
 import { mockSendEmail } from "../../../shared/data/notificationStorage";
 import {
   ROLE_PROFILES,
   suggestRoleByArea,
+  ACCESS_PROFILES,
+  getAccessProfileOptions,
+  getProfileInternalRoles,
+  type ProfileCode,
 } from "../../../shared/security/roleProfiles";
 import InfoTooltip from "../../../shared/components/ui/InfoTooltip";
 import SectionCard from "../../../shared/components/ui/SectionCard";
@@ -22,17 +27,24 @@ import FormInput from "../../../shared/components/forms/FormInput";
 import FormSelect from "../../../shared/components/forms/FormSelect";
 import FormActionButtons from "../../../shared/components/forms/FormActionButtons";
 import ExcelTemplateActions from "../../../shared/components/forms/ExcelTemplateActions";
+import SiUserSelector from "../../../shared/components/forms/SiUserSelector";
+import { validateSiUser, getSiUserMirrorByCode } from "../../../shared/data/siUserMirrorStorage";
 
 const RECENT_NEW_USER_KEY = "odiseo_recent_new_user";
 
 interface FormState {
   email: string;
-  odiseoUser: string;
-  workerCode: string;
   fullName: string;
+  phone: string;
   position: string;
   area: string;
-  role: string;
+  areaCode?: string;
+  areaLabel?: string;
+  profileCode: ProfileCode;
+  profileLabel?: string;
+  integralSystemUserId: string;
+  integralSystemUserValue: string;
+  integralSystemUserStatus?: string;
 }
 
 type ExplicitFlowState = "initial" | "existingEmailFound" | "newEmailConfirmed";
@@ -47,9 +59,6 @@ const USER_AREA_OPTIONS = [
   { value: "R&D", label: "R&D" },
 ];
 
-const PROFILES_INFO =
-  "Administrador: acceso total al portal ODISEO.\n\nTI Soporte: soporte técnico, gestión de usuarios, auditoría y configuración.\n\nMaster Data: gestión de datos maestros, catálogos, restricciones, productos y portafolios.\n\nComercial: gestión comercial de portafolios, clientes y consulta de productos.\n\nCustomer Service: consulta, seguimiento y creación/actualización de portafolios y productos según casuística.\n\nR&D: creación y actualización de productos; soporte técnico funcional del producto.\n\nSolo Consulta: acceso solo lectura.";
-
 const EMPTY_VALUE = "—";
 
 export default function UserCreatePage() {
@@ -60,12 +69,13 @@ export default function UserCreatePage() {
 
   const [form, setForm] = useState<FormState>({
     email: "",
-    odiseoUser: "",
-    workerCode: "",
     fullName: "",
+    phone: "",
     position: "",
     area: "",
-    role: "",
+    profileCode: "" as ProfileCode,
+    integralSystemUserId: "",
+    integralSystemUserValue: "",
   });
 
   const [explicitFlowState, setExplicitFlowState] =
@@ -85,18 +95,14 @@ export default function UserCreatePage() {
     null
   );
 
-  const roleOptions = useMemo(
-    () =>
-      ROLE_PROFILES.map((profile) => ({
-        value: profile.code,
-        label: profile.name,
-      })),
+  const profileOptions = useMemo(
+    () => getAccessProfileOptions(),
     []
   );
 
-  const selectedRoleProfile = useMemo(
-    () => ROLE_PROFILES.find((profile) => profile.code === form.role),
-    [form.role]
+  const selectedProfile = useMemo(
+    () => ACCESS_PROFILES.find((profile) => profile.code === form.profileCode),
+    [form.profileCode]
   );
 
   useEffect(() => {
@@ -212,9 +218,8 @@ export default function UserCreatePage() {
   const handleDownloadTemplate = () => {
     const headers = [
       "Correo Corporativo",
-      "Usuario ODISEO",
-      "Código Trabajador",
       "Nombre Completo",
+      "Teléfono",
       "Puesto",
       "Área",
     ];
@@ -249,16 +254,12 @@ export default function UserCreatePage() {
             imported.email = String(firstRow["Correo Corporativo"]).trim();
           }
 
-          if (firstRow["Usuario ODISEO"]) {
-            imported.odiseoUser = String(firstRow["Usuario ODISEO"]).trim();
-          }
-
-          if (firstRow["Código Trabajador"]) {
-            imported.workerCode = String(firstRow["Código Trabajador"]).trim();
-          }
-
           if (firstRow["Nombre Completo"]) {
             imported.fullName = String(firstRow["Nombre Completo"]).trim();
+          }
+
+          if (firstRow["Teléfono"]) {
+            imported.phone = String(firstRow["Teléfono"]).trim();
           }
 
           if (firstRow["Puesto"]) {
@@ -288,14 +289,9 @@ export default function UserCreatePage() {
     const imported = await parseUserTemplate(file);
 
     if (imported && imported.email) {
-      const suggestedRole = imported.area
-        ? suggestRoleByArea(imported.area)
-        : form.role;
-
       setForm((prev) => ({
         ...prev,
         ...imported,
-        role: suggestedRole,
       }));
 
       validateCorporateEmail(imported.email);
@@ -307,12 +303,9 @@ export default function UserCreatePage() {
   };
 
   const handleAreaChange = (area: string) => {
-    const suggestedRole = suggestRoleByArea(area);
-
     setForm((prev) => ({
       ...prev,
       area,
-      role: suggestedRole,
     }));
   };
 
@@ -326,14 +319,6 @@ export default function UserCreatePage() {
     }
 
     if (explicitFlowState === "newEmailConfirmed") {
-      if (!form.odiseoUser.trim()) {
-        errors.odiseoUser = "Ingresa el usuario ODISEO.";
-      }
-
-      if (!form.workerCode.trim()) {
-        errors.workerCode = "Ingresa el código de trabajador.";
-      }
-
       if (!form.fullName.trim()) {
         errors.fullName = "Ingresa el nombre completo.";
       }
@@ -346,8 +331,30 @@ export default function UserCreatePage() {
         errors.area = "Selecciona el área.";
       }
 
-      if (!form.role) {
-        errors.role = "Selecciona el perfil ODISEO.";
+      if (!form.profileCode) {
+        errors.profileCode = "Selecciona el perfil de acceso ODISEO.";
+      } else if (form.profileCode === "ADMINISTRADOR") {
+        const activeUsers = getAllUsers();
+        const existingAdmin = activeUsers.some(
+          (user) =>
+            user.status === "active" &&
+            user.profileCode === "ADMINISTRADOR"
+        );
+
+        if (existingAdmin) {
+          errors.profileCode = "Ya existe un usuario activo con perfil Administrador. No es posible asignar este perfil a otro usuario.";
+        }
+      }
+
+      if (!form.integralSystemUserId.trim()) {
+        errors.integralSystemUserId = "Selecciona un usuario válido del Sistema Integral.";
+      } else {
+        const validation = validateSiUser(form.integralSystemUserId);
+        if (!validation.exists) {
+          errors.integralSystemUserId = "Selecciona un usuario válido del Sistema Integral.";
+        } else if (validation.user?.status === "Inactivo") {
+          errors.integralSystemUserId = "El usuario del Sistema Integral se encuentra inactivo.";
+        }
       }
     }
 
@@ -358,12 +365,12 @@ export default function UserCreatePage() {
     explicitFlowState === "newEmailConfirmed" && Boolean(form.email.trim());
 
   const isUserDataStepComplete =
-    Boolean(form.odiseoUser.trim()) &&
-    Boolean(form.workerCode.trim()) &&
     Boolean(form.fullName.trim()) &&
     Boolean(form.position.trim());
 
-  const isAccessStepComplete = Boolean(form.area) && Boolean(form.role);
+  const isAccessStepComplete = Boolean(form.area) && Boolean(form.profileCode);
+
+  const isIntegralUserStepComplete = Boolean(form.integralSystemUserId.trim());
 
   const completionPercentage = useMemo(() => {
     if (existingUserPreview) return 0;
@@ -372,11 +379,12 @@ export default function UserCreatePage() {
       isEmailStepComplete,
       isUserDataStepComplete,
       isAccessStepComplete,
+      isIntegralUserStepComplete,
     ];
 
     const completed = checks.filter(Boolean).length;
     return Math.round((completed / checks.length) * 100);
-  }, [isEmailStepComplete, isUserDataStepComplete, isAccessStepComplete, existingUserPreview]);
+  }, [isEmailStepComplete, isUserDataStepComplete, isAccessStepComplete, isIntegralUserStepComplete, existingUserPreview]);
 
   const validationErrorList = Object.values(validationErrors).filter(
     (error): error is string => Boolean(error)
@@ -386,7 +394,7 @@ export default function UserCreatePage() {
     Boolean(existingUserPreview) ||
     explicitFlowState === "existingEmailFound" ||
     explicitFlowState !== "newEmailConfirmed" ||
-    isEmailStepComplete && (!isUserDataStepComplete || !isAccessStepComplete) ||
+    isEmailStepComplete && (!isUserDataStepComplete || !isAccessStepComplete || !isIntegralUserStepComplete) ||
     validationErrorList.length > 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -408,32 +416,40 @@ export default function UserCreatePage() {
       return;
     }
 
-    const duplicateByWorkerCode = findDuplicateUser(
-      "",
-      form.workerCode.trim()
-    );
-
-    if (duplicateByWorkerCode) {
-      setErrorMessage(
-        "No se puede registrar porque el código de trabajador ya existe en ODISEO. Revisa el código ingresado."
-      );
-      return;
-    }
 
     setLoading(true);
 
     try {
       const tempPassword = Math.random().toString(36).substring(2, 10);
 
+      // Derive ODISEO username from email
+      const emailParts = form.email.trim().toLowerCase().split("@");
+      const odiseoUsername = emailParts[0];
+
+      // Get profile internal roles
+      const profileRoles = getProfileInternalRoles(form.profileCode);
+      const selectedProfileData = ACCESS_PROFILES.find(p => p.code === form.profileCode);
+
       const newUser = createUser({
         email: form.email.trim().toLowerCase(),
         password: tempPassword,
         fullName: form.fullName.trim(),
-        workerCode: form.workerCode.trim(),
+        phone: form.phone || undefined,
+        workerCode: odiseoUsername,
         position: form.position.trim(),
-        role: form.role as any,
+        role: "admin" as any,
         status: "pending_activation" as any,
         area: form.area || undefined,
+        areaCode: form.areaCode,
+        areaLabel: form.areaLabel,
+        profileCode: form.profileCode,
+        profileLabel: selectedProfileData?.name,
+        roles: profileRoles,
+        integralSystemUserId: form.integralSystemUserId,
+        integralSystemUserValue: form.integralSystemUserValue,
+        integralSystemUserStatus: form.integralSystemUserStatus,
+        odiseoUserStatus: "PENDIENTE_ACTIVACION",
+        syncStatus: "PENDIENTE_SINCRONIZACION",
       });
 
       mockSendEmail(
@@ -490,10 +506,17 @@ export default function UserCreatePage() {
       ]
     : [
         { label: "Correo", value: form.email || EMPTY_VALUE },
-        { label: "Usuario ODISEO", value: form.odiseoUser || EMPTY_VALUE },
-        { label: "Código Trabajador", value: form.workerCode || EMPTY_VALUE },
+        { label: "Nombre completo", value: form.fullName || EMPTY_VALUE },
         { label: "Área", value: form.area || EMPTY_VALUE },
-        { label: "Perfil", value: selectedRoleProfile?.name || EMPTY_VALUE },
+        { label: "Puesto", value: form.position || EMPTY_VALUE },
+        { label: "Perfil", value: selectedProfile?.name || EMPTY_VALUE },
+        { label: "Usuario SI", value: form.integralSystemUserValue || EMPTY_VALUE },
+        {
+          label: "Estado Usuario SI",
+          value: form.integralSystemUserStatus === "*" ? "Inactivo" : form.integralSystemUserStatus === "" ? "Activo" : "—",
+        },
+        { label: "Estado ODISEO", value: "Pendiente de activación" },
+        { label: "Sincronización", value: "Pendiente de sincronización" },
       ];
 
   return (
@@ -535,12 +558,17 @@ export default function UserCreatePage() {
                     setForm((prev) => ({
                       ...prev,
                       email: value,
-                      odiseoUser: "",
-                      workerCode: "",
                       fullName: "",
+                      phone: "",
                       position: "",
                       area: "",
-                      role: "",
+                      areaCode: undefined,
+                      areaLabel: undefined,
+                      profileCode: "" as ProfileCode,
+                      profileLabel: undefined,
+                      integralSystemUserId: "",
+                      integralSystemUserValue: "",
+                      integralSystemUserStatus: undefined,
                     }));
 
                     setExistingUserPreview(null);
@@ -607,52 +635,29 @@ export default function UserCreatePage() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <FormInput
-                      label="Usuario ODISEO"
-                      value={form.odiseoUser}
-                      onChange={(value) =>
-                        setForm({ ...form, odiseoUser: value })
-                      }
-                      placeholder="Ej: jperez o juan.perez"
-                      error={
-                        submitAttempted
-                          ? validationErrors.odiseoUser
-                          : undefined
-                      }
-                      required
-                    />
-
-                    <FormInput
-                      label="Código Trabajador"
-                      value={form.workerCode}
-                      onChange={(value) =>
-                        setForm({ ...form, workerCode: value })
-                      }
-                      placeholder="Ej: TRB-000001 o 102345"
-                      error={
-                        submitAttempted
-                          ? validationErrors.workerCode
-                          : undefined
-                      }
-                      required
-                    />
-                  </div>
+                  <FormInput
+                    label="Nombre completo"
+                    value={form.fullName}
+                    onChange={(value) =>
+                      setForm({ ...form, fullName: value })
+                    }
+                    placeholder="Ej: Juan Pérez García"
+                    error={
+                      submitAttempted
+                        ? validationErrors.fullName
+                        : undefined
+                    }
+                    required
+                  />
 
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     <FormInput
-                      label="Nombre Completo"
-                      value={form.fullName}
+                      label="Teléfono"
+                      value={form.phone}
                       onChange={(value) =>
-                        setForm({ ...form, fullName: value })
+                        setForm({ ...form, phone: value })
                       }
-                      placeholder="Ej: Juan Pérez García"
-                      error={
-                        submitAttempted
-                          ? validationErrors.fullName
-                          : undefined
-                      }
-                      required
+                      placeholder="Ej: +52 55 1234 5678"
                     />
 
                     <FormInput
@@ -700,21 +705,71 @@ export default function UserCreatePage() {
                     />
 
                     <FormSelect
-                      label="Perfil ODISEO"
-                      value={form.role}
-                      onChange={(value) => setForm({ ...form, role: value })}
-                      options={roleOptions}
+                      label="Perfil de acceso ODISEO"
+                      value={form.profileCode}
+                      onChange={(value) => setForm({ ...form, profileCode: value as ProfileCode })}
+                      options={profileOptions}
                       placeholder="Selecciona el perfil"
                       error={
-                        submitAttempted ? validationErrors.role : undefined
+                        submitAttempted ? validationErrors.profileCode : undefined
                       }
                       required
                       labelAction={
                         <InfoTooltip
-                          title="Perfiles ODISEO"
-                          content={PROFILES_INFO}
+                          title="Perfiles de acceso ODISEO"
+                          content="Define el grupo de roles y permisos que tendrá el usuario dentro de ODISEO."
                         />
                       }
+                    />
+                  </div>
+                </div>
+              </SectionCard>
+            )}
+
+            {/* SECCIÓN 4: Usuario Sistema Integral */}
+            {!existingUserPreview && explicitFlowState === "newEmailConfirmed" && (
+              <SectionCard
+                number={4}
+                title="Usuario Sistema Integral"
+                status={isIntegralUserStepComplete ? "completed" : "pending"}
+                color="#00395A"
+                required
+                infoTitle="Sincronización con Sistema Integral"
+                infoContent="Registra el usuario del Sistema Integral para sincronizarlo con el usuario ODISEO y mantener trazabilidad entre ambos sistemas."
+              >
+                <div className="space-y-3">
+                  <SiUserSelector
+                    value={form.integralSystemUserId}
+                    onChange={(userId, userValue) => {
+                      const siUser = userId ? getSiUserMirrorByCode(userId) : null;
+                      setForm({
+                        ...form,
+                        integralSystemUserId: userId,
+                        integralSystemUserValue: userValue,
+                        integralSystemUserStatus: siUser?.integralSystemUserStatus,
+                      });
+                    }}
+                    error={
+                      submitAttempted
+                        ? validationErrors.integralSystemUserId
+                        : undefined
+                    }
+                    required
+                  />
+
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <FormInput
+                      label="Estado Usuario SI"
+                      value={form.integralSystemUserStatus === "*" || form.integralSystemUserStatus === "" ? (form.integralSystemUserStatus === "*" ? "Inactivo" : "Activo") : "—"}
+                      onChange={() => {}}
+                      disabled
+                    />
+
+                    <FormInput
+                      label="Estado de sincronización"
+                      value="Pendiente de sincronización"
+                      onChange={() => {}}
+                      disabled
                     />
                   </div>
                 </div>
@@ -803,23 +858,14 @@ export default function UserCreatePage() {
                     </div>
                   ))}
 
-                  <div className="mt-3 border-t border-slate-100 pt-3">
-                    <span className="text-xs font-bold uppercase text-slate-400">
-                      Estado
-                    </span>
-                    <p className="mt-1 text-xs font-semibold text-slate-900">
-                      Pendiente de activación
-                    </p>
-                  </div>
-
-                  {selectedRoleProfile &&
+                  {selectedProfile &&
                     explicitFlowState === "newEmailConfirmed" && (
                       <div className="mt-3 border-t border-slate-100 pt-3">
                         <span className="text-xs font-bold uppercase text-slate-400">
-                          Permisos principales
+                          Roles internos
                         </span>
                         <p className="mt-1 text-xs text-slate-700 leading-relaxed">
-                          {selectedRoleProfile.description}
+                          {selectedProfile.internalRoles.join(", ")}
                         </p>
                       </div>
                     )}

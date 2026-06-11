@@ -1,5 +1,36 @@
 [
   {
+    "id": "USR-000001",
+    "code": "US-000001",
+    "email": "admin@amcor.com",
+    "password": "123456",
+    "firstName": "Administrador",
+    "lastName": "Sistema",
+    "fullName": "Administrador Sistema",
+    "role": "admin",
+    "status": "active",
+    "workerCode": "GEN-ADMIN",
+    "position": "Administrador del Portal",
+    "company": "Amcor",
+    "area": "Sistema",
+    "createdAt": "2026-01-01T00:00:00.000Z",
+    "updatedAt": "2026-01-01T00:00:00.000Z",
+    "lastLoginAt": "2026-05-13T01:38:02.647Z"
+  },
+  {
+    "email": "relora@minsait.com",
+    "password": "hhcdte4r",
+    "fullName": "RONALD",
+    "workerCode": "1231343",
+    "position": "Data Manager",
+    "role": "commercial",
+    "status": "pending_activation",
+    "area": "Comercial",
+    "id": "USR-001050",
+    "code": "US-001050",
+    "createdAt": "2026-06-10T14:17:21.686Z"
+  },
+  {
     "email": "julio.valerio@amcor.com",
     "password": "amj0yq4l",
     "fullName": "Julio Valerio ASDS",
@@ -28,24 +59,6 @@
     "position": "Ejecutivo Comercial",
     "area": "Comercial",
     "createdAt": "2026-01-01T00:00:00.000Z"
-  },
-  {
-    "id": "USR-000001",
-    "code": "US-000001",
-    "email": "admin@amcor.com",
-    "password": "123456",
-    "firstName": "Administrador",
-    "lastName": "Sistema",
-    "fullName": "Administrador Sistema",
-    "role": "admin",
-    "status": "active",
-    "workerCode": "GEN-ADMIN",
-    "position": "Administrador del Portal",
-    "company": "Amcor",
-    "area": "Sistema",
-    "createdAt": "2026-01-01T00:00:00.000Z",
-    "updatedAt": "2026-01-01T00:00:00.000Z",
-    "lastLoginAt": "2026-05-13T01:38:02.647Z"
   },
   {
     "id": "USR-000004",

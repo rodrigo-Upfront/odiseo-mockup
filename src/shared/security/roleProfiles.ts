@@ -1,3 +1,32 @@
+// Roles internos del sistema
+export type InternalRoleCode =
+  | "ADMIN"
+  | "EDITOR"
+  | "APPROVER"
+  | "AUDITOR"
+  | "VIEWER";
+
+// Perfiles visibles para el usuario
+export type ProfileCode =
+  | "ADMINISTRADOR"
+  | "EDITOR"
+  | "APROBADOR"
+  | "VISOR";
+
+// Estado propio del Usuario ODISEO
+export type OdiseoUserStatus =
+  | "PENDIENTE_ACTIVACION"
+  | "ACTIVO"
+  | "INACTIVO"
+  | "BLOQUEADO";
+
+// Estado de sincronización con Sistema Integral
+export type SyncStatus =
+  | "PENDIENTE_SINCRONIZACION"
+  | "SINCRONIZADO"
+  | "ERROR_SINCRONIZACION";
+
+// Legacy role codes for backward compatibility
 export type RoleCode =
   | "admin"
   | "it_support"
@@ -27,6 +56,18 @@ export type PermissionCode =
   | "audit.read"
   | "settings.update";
 
+export interface InternalRole {
+  code: InternalRoleCode;
+  name: string;
+  description: string;
+}
+
+export interface AccessProfile {
+  code: ProfileCode;
+  name: string;
+  internalRoles: InternalRoleCode[];
+}
+
 export interface RoleProfile {
   code: RoleCode;
   name: string;
@@ -34,6 +75,60 @@ export interface RoleProfile {
   permissions: PermissionCode[];
 }
 
+// Roles internos del sistema
+export const INTERNAL_ROLES: InternalRole[] = [
+  {
+    code: "ADMIN",
+    name: "Administrador",
+    description: "Control total del sistema.",
+  },
+  {
+    code: "EDITOR",
+    name: "Editor",
+    description: "Puede crear, modificar y mantener información operativa.",
+  },
+  {
+    code: "APPROVER",
+    name: "Aprobador",
+    description: "Puede aprobar, rechazar o devolver registros.",
+  },
+  {
+    code: "AUDITOR",
+    name: "Auditor",
+    description: "Puede revisar bitácoras, historial, trazabilidad y cambios.",
+  },
+  {
+    code: "VIEWER",
+    name: "Visor",
+    description: "Puede consultar información en modo solo lectura.",
+  },
+];
+
+// Perfiles de acceso visibles para el usuario
+export const ACCESS_PROFILES: AccessProfile[] = [
+  {
+    code: "ADMINISTRADOR",
+    name: "Administrador",
+    internalRoles: ["ADMIN", "EDITOR", "APPROVER", "AUDITOR", "VIEWER"],
+  },
+  {
+    code: "EDITOR",
+    name: "Editor",
+    internalRoles: ["EDITOR", "VIEWER"],
+  },
+  {
+    code: "APROBADOR",
+    name: "Aprobador",
+    internalRoles: ["APPROVER", "VIEWER"],
+  },
+  {
+    code: "VISOR",
+    name: "Visor",
+    internalRoles: ["VIEWER"],
+  },
+];
+
+// Legacy ROLE_PROFILES for backward compatibility
 export const ROLE_PROFILES: RoleProfile[] = [
   {
     code: "admin",
@@ -167,6 +262,14 @@ export function getRoleProfile(code: RoleCode): RoleProfile | undefined {
   return ROLE_PROFILES.find((item) => item.code === code);
 }
 
+export function getAccessProfile(code: ProfileCode): AccessProfile | undefined {
+  return ACCESS_PROFILES.find((item) => item.code === code);
+}
+
+export function getInternalRole(code: InternalRoleCode): InternalRole | undefined {
+  return INTERNAL_ROLES.find((item) => item.code === code);
+}
+
 export function suggestRoleByArea(area: string): RoleCode {
   const normalizedArea = area.trim().toLowerCase();
 
@@ -192,3 +295,38 @@ export function suggestRoleByArea(area: string): RoleCode {
 
   return "readonly";
 }
+
+// Helper function to get profile options for dropdown
+export function getAccessProfileOptions() {
+  return ACCESS_PROFILES.map((profile) => ({
+    value: profile.code,
+    label: profile.name,
+  }));
+}
+
+// Helper function to check if a profile has a specific internal role
+export function profileHasInternalRole(profileCode: ProfileCode, internalRole: InternalRoleCode): boolean {
+  const profile = getAccessProfile(profileCode);
+  return Boolean(profile?.internalRoles.includes(internalRole));
+}
+
+// Helper function to get all internal roles for a profile
+export function getProfileInternalRoles(profileCode: ProfileCode): InternalRoleCode[] {
+  const profile = getAccessProfile(profileCode);
+  return profile?.internalRoles || [];
+}
+
+// Labels para estado ODISEO
+export const ODISEO_USER_STATUS_LABELS: Record<OdiseoUserStatus, string> = {
+  PENDIENTE_ACTIVACION: "Pendiente de activación",
+  ACTIVO: "Activo",
+  INACTIVO: "Inactivo",
+  BLOQUEADO: "Bloqueado",
+};
+
+// Labels para estado de sincronización
+export const SYNC_STATUS_LABELS: Record<SyncStatus, string> = {
+  PENDIENTE_SINCRONIZACION: "Pendiente de sincronización",
+  SINCRONIZADO: "Sincronizado",
+  ERROR_SINCRONIZACION: "Error de sincronización",
+};
