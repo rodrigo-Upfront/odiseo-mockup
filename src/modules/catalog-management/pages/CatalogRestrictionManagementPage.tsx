@@ -5,8 +5,7 @@ import { useLayout } from "../../../components/layout/LayoutContext";
 import { getCurrentUser } from "../../../shared/data/userStorage";
 import FormActionButtons from "../../../shared/components/forms/FormActionButtons";
 import ManagementTypeSelector from "../components/ManagementTypeSelector";
-import CatalogSourceSelector from "../components/CatalogSourceSelector";
-import ManagementParametersCard from "../components/ManagementParametersCard";
+import SourceAndParametersTab from "../components/SourceAndParametersTab";
 import TemplateDownloadCard from "../components/TemplateDownloadCard";
 import ValidationSummaryCard from "../components/ValidationSummaryCard";
 import ChangePreviewTable from "../components/ChangePreviewTable";
@@ -216,22 +215,19 @@ export default function CatalogRestrictionManagementPage() {
 
         <ManagementTypeSelector value={managementType} onChange={handleTypeChange} />
 
-        {managementType === "catalog" && (
-          <CatalogSourceSelector value={catalogSource} onChange={setCatalogSource} />
-        )}
+        <SourceAndParametersTab
+          type={managementType}
+          selectedTarget={selectedTarget}
+          selectedTargetId={selectedTargetId}
+          onTargetChange={setSelectedTarget}
+          onTargetIdChange={setSelectedTargetId}
+          errors={validationErrors}
+          submitAttempted={submitAttempted}
+          catalogSource={catalogSource}
+          onCatalogSourceChange={setCatalogSource}
+        />
 
         <div className="space-y-6">
-          <ManagementParametersCard
-            type={managementType}
-            selectedTarget={selectedTarget}
-            selectedTargetId={selectedTargetId}
-            onTargetChange={setSelectedTarget}
-            onTargetIdChange={setSelectedTargetId}
-            errors={validationErrors}
-            submitAttempted={submitAttempted}
-            catalogSource={catalogSource}
-            onCatalogSourceChange={setCatalogSource}
-          />
 
           <TemplateDownloadCard
             type={managementType}
