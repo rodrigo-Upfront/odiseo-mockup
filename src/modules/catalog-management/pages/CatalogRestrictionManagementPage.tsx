@@ -206,7 +206,7 @@ export default function CatalogRestrictionManagementPage() {
             </p>
           </div>
           <button
-            onClick={() => navigate("/catalogs")}
+            onClick={() => navigate("/catalogs/view-all")}
             className="inline-flex items-center gap-2 rounded-lg border border-brand-primary bg-white px-4 py-2 text-sm font-semibold text-brand-primary hover:bg-brand-primary hover:text-white transition-colors whitespace-nowrap"
           >
             👁️ Ver todo

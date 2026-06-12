@@ -165,10 +165,10 @@ export default function AppRouter() {
         <Route path="users/:userId/edit" element={<UserEditPage />} />
 
         {/* Catálogos */}
-        <Route path="catalogs" element={<ViewAllCatalogsPage />} />
+        <Route path="catalogs" element={<CatalogRestrictionManagementPage />} />
         <Route
-          path="catalog-management"
-          element={<CatalogRestrictionManagementPage />}
+          path="catalogs/view-all"
+          element={<ViewAllCatalogsPage />}
         />
 
         {/* Rutas temporales del sidebar */}
