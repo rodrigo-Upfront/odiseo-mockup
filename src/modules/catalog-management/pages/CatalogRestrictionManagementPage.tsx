@@ -5,6 +5,7 @@ import { useLayout } from "../../../components/layout/LayoutContext";
 import { getCurrentUser } from "../../../shared/data/userStorage";
 import FormActionButtons from "../../../shared/components/forms/FormActionButtons";
 import ManagementTypeSelector from "../components/ManagementTypeSelector";
+import CatalogSourceSelector from "../components/CatalogSourceSelector";
 import ManagementParametersCard from "../components/ManagementParametersCard";
 import TemplateDownloadCard from "../components/TemplateDownloadCard";
 import ValidationSummaryCard from "../components/ValidationSummaryCard";
@@ -214,6 +215,10 @@ export default function CatalogRestrictionManagementPage() {
         </div>
 
         <ManagementTypeSelector value={managementType} onChange={handleTypeChange} />
+
+        {managementType === "catalog" && (
+          <CatalogSourceSelector value={catalogSource} onChange={setCatalogSource} />
+        )}
 
         <div className="space-y-6">
           <ManagementParametersCard
