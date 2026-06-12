@@ -247,19 +247,65 @@ export function authenticateUser(
     (u) => normalizeEmail(u.email) === normalizedEmail
   );
 
+  // User not found - don't reveal this for security
   if (!user) {
     return null;
   }
 
+  // Check if user is logically inactive (soft deleted)
+  if (!user.activeLogical) {
+    registerAccessAuditEvent(
+      user.id,
+      "INTENTO_LOGIN_FALLIDO",
+      user.id,
+      SYSTEM_USER,
+      {
+        origin: "Seguridad",
+        details: "Intento de login con usuario inactivo (baja lógica)",
+      }
+    );
+    return null;
+  }
+
+  // Check if user is blocked by security (3 failed attempts)
+  const BLOQUEADO_STATUS_ID = 3;
+  if (user.accessStatusId === BLOQUEADO_STATUS_ID) {
+    registerAccessAuditEvent(
+      user.id,
+      "INTENTO_LOGIN_FALLIDO",
+      user.id,
+      SYSTEM_USER,
+      {
+        origin: "Seguridad",
+        details: "Intento de login con usuario bloqueado",
+      }
+    );
+    return null;
+  }
+
+  // Check if user is pending activation
+  const PENDIENTE_ACTIVACION_STATUS_ID = 1;
+  if (user.accessStatusId === PENDIENTE_ACTIVACION_STATUS_ID) {
+    // Allow login but they'll be redirected to password setup
+    // This is allowed - they're setting up their account
+  }
+
   const storedPassword = (user as any).password || DEFAULT_DEMO_PASSWORD;
 
+  // Check password
   if (storedPassword !== password) {
+    recordFailedLoginAttempt(user.id);
     return null;
   }
 
+  // Legacy status check (backward compatibility)
   if (user.status !== "active") {
+    recordFailedLoginAttempt(user.id);
     return null;
   }
+
+  // Login successful - reset failed attempts and update last login
+  recordSuccessfulLogin(user.id);
 
   const updatedUser = {
     ...user,
@@ -267,6 +313,17 @@ export function authenticateUser(
   };
 
   saveUserRecord(updatedUser);
+
+  registerAccessAuditEvent(
+    user.id,
+    "LOGIN_EXITOSO",
+    user.id,
+    user.email,
+    {
+      origin: "Sistema",
+      details: "Login exitoso",
+    }
+  );
 
   const { password: _, ...publicUser } = updatedUser;
   localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(publicUser));
@@ -310,7 +367,7 @@ export function saveUserRecord(record: User): void {
 }
 
 export function createUser(
-  newUser: Partial<Pick<User, "workerCode" | "position" | "fullName" | "phone" | "areaCode" | "areaLabel" | "profileCode" | "profileLabel" | "roles" | "integralSystemUserId" | "integralSystemUserValue" | "integralSystemUserName" | "integralSystemUserStatus" | "syncStatus" | "createdByUser" | "updatedByUser">> &
+  newUser: Partial<Pick<User, "workerCode" | "position" | "fullName" | "phone" | "areaCode" | "areaLabel" | "profileCode" | "profileLabel" | "roles" | "integralSystemUserId" | "integralSystemUserValue" | "integralSystemUserName" | "integralSystemUserStatus" | "syncStatus" | "createdByUser" | "updatedByUser" | "accessStatusId" | "failedLoginAttempts" | "activeLogical">> &
     Omit<
       User,
       | "id"
@@ -332,6 +389,9 @@ export function createUser(
       | "syncStatus"
       | "createdByUser"
       | "updatedByUser"
+      | "accessStatusId"
+      | "failedLoginAttempts"
+      | "activeLogical"
     >
 ): User {
   const now = new Date().toISOString();

@@ -10,6 +10,7 @@ import {
   getNextUserCode,
   getUserByEmail,
   getAllUsers,
+  getCurrentUser,
 } from "../../../shared/data/userStorage";
 import { mockSendEmail } from "../../../shared/data/notificationStorage";
 import {
@@ -420,6 +421,8 @@ export default function UserCreatePage() {
       const profileRoles = getProfileInternalRoles(form.profileCode);
       const selectedProfileData = ACCESS_PROFILES.find(p => p.code === form.profileCode);
 
+      const currentUser = getCurrentUser();
+
       const newUser = createUser({
         email: form.email.trim().toLowerCase(),
         password: tempPassword,
@@ -427,7 +430,7 @@ export default function UserCreatePage() {
         phone: form.phone || undefined,
         workerCode: odiseoUsername,
         position: form.position.trim(),
-        role: "admin" as any,
+        role: "master_data" as any, // Default role, can be adjusted per policy
         status: "pending_activation" as any,
         area: form.area || undefined,
         areaCode: form.areaCode,
@@ -439,9 +442,9 @@ export default function UserCreatePage() {
         integralSystemUserValue: form.integralSystemUserValue,
         integralSystemUserName: form.integralSystemUserName,
         integralSystemUserStatus: form.integralSystemUserStatus,
-        odiseoUserStatus: "PENDIENTE_ACTIVACION",
         syncStatus: "PENDIENTE_SINCRONIZACION",
-        activeLogical: true,
+        createdByUser: currentUser?.fullName || "SISTEMA",
+        // Note: accessStatusId, failedLoginAttempts, activeLogical are auto-set by createUser
       });
 
       mockSendEmail(

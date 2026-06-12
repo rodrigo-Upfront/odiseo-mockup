@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { validateResetToken, markAsUsed } from "../../../shared/data/passwordResetStorage";
-import { getUserById, updateUser } from "../../../shared/data/userStorage";
+import { getUserById, updateUser, activateUserPassword } from "../../../shared/data/userStorage";
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
@@ -97,9 +97,16 @@ export default function ResetPasswordPage() {
         return;
       }
 
+      // Update password
       updateUser(user.id, {
         password: newPassword,
       });
+
+      // If user is in PENDIENTE_ACTIVACION, activate them to HABILITADO
+      const PENDIENTE_ACTIVACION_STATUS_ID = 1;
+      if (user.accessStatusId === PENDIENTE_ACTIVACION_STATUS_ID) {
+        activateUserPassword(user.id, user.email);
+      }
 
       markAsUsed(token);
 
