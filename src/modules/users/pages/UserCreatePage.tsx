@@ -33,13 +33,12 @@ import { validateSiUser, getSiUserMirrorByCode } from "../../../shared/data/siUs
 const RECENT_NEW_USER_KEY = "odiseo_recent_new_user";
 
 interface FormState {
-  // ODISEO Fields
+  // ODISEO Fields (editable)
   email: string;
   fullName: string;
   position: string;
   area: string;
   profileCode: ProfileCode;
-  odiseoUserStatus: string;
 
   // SI Reference Fields (read-only, auto-populated)
   integralSystemUserId: string;
@@ -81,7 +80,6 @@ export default function UserCreatePage() {
     position: "",
     area: "",
     profileCode: "" as ProfileCode,
-    odiseoUserStatus: "PENDIENTE_ACTIVACION",
     // SI Reference Fields
     integralSystemUserId: "",
     integralSystemUserValue: "",
@@ -576,7 +574,6 @@ export default function UserCreatePage() {
                       position: "",
                       area: "",
                       profileCode: "" as ProfileCode,
-                      odiseoUserStatus: "PENDIENTE_ACTIVACION",
                       integralSystemUserId: "",
                       integralSystemUserValue: "",
                       integralSystemUserName: undefined,
@@ -692,19 +689,19 @@ export default function UserCreatePage() {
               </SectionCard>
             )}
 
-            {/* SECCIÓN 3: Área, Perfil y Estado del usuario */}
+            {/* SECCIÓN 3: Área y Perfil */}
             {!existingUserPreview && explicitFlowState === "newEmailConfirmed" && (
               <SectionCard
                 number={3}
-                title="Perfil y estado del usuario"
+                title="Perfil de acceso"
                 status={isAccessStepComplete ? "completed" : "pending"}
                 color="#00395A"
                 required
-                infoTitle="Configuración de acceso y estado"
-                infoContent="El Perfil define los permisos del usuario. El Estado es independiente del Sistema Integral."
+                infoTitle="Configuración de acceso"
+                infoContent="El Perfil define los permisos del usuario en ODISEO."
               >
                 <div className="space-y-3">
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     <FormSelect
                       label="Área"
                       value={form.area}
@@ -733,20 +730,6 @@ export default function UserCreatePage() {
                           content="Define el grupo de roles y permisos que tendrá el usuario en ODISEO."
                         />
                       }
-                    />
-
-                    <FormSelect
-                      label="Estado del usuario"
-                      value={form.odiseoUserStatus}
-                      onChange={(value) => setForm({ ...form, odiseoUserStatus: value })}
-                      options={[
-                        { value: "PENDIENTE_ACTIVACION", label: "Pendiente de activación" },
-                        { value: "ACTIVO", label: "Activo" },
-                        { value: "INACTIVO", label: "Inactivo" },
-                        { value: "BLOQUEADO", label: "Bloqueado" },
-                      ]}
-                      placeholder="Selecciona el estado"
-                      required
                     />
                   </div>
                 </div>
