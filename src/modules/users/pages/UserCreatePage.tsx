@@ -512,8 +512,9 @@ export default function UserCreatePage() {
     section?: string;
   }
 
-  const previewItems: PreviewItem[] = existingUserPreview
-    ? [
+  const buildPreviewItems = (): PreviewItem[] => {
+    if (existingUserPreview) {
+      return [
         { label: "ID ODISEO", value: existingUserPreview.code },
         { label: "Correo", value: existingUserPreview.email },
         { label: "Nombre completo", value: existingUserPreview.fullName },
@@ -521,20 +522,33 @@ export default function UserCreatePage() {
         { label: "Área", value: existingUserPreview.area },
         { label: "Perfil", value: getRoleLabel(existingUserPreview.role) },
         { label: "Estado", value: getUserStatusLabel(existingUserPreview.status) },
-      ]
-    : [
-        { section: "ODISEO" },
-        { label: "Correo corporativo", value: form.email || EMPTY_VALUE },
-        { label: "Nombre completo", value: form.fullName || EMPTY_VALUE },
-        { label: "Puesto", value: form.position || EMPTY_VALUE },
-        { label: "Área", value: form.area || EMPTY_VALUE },
-        { label: "Perfil ODISEO", value: selectedProfile?.name || EMPTY_VALUE },
-        { label: "Estado ODISEO", value: form.odiseoUserStatus ? form.odiseoUserStatus.replace(/_/g, " ") : EMPTY_VALUE },
-        { section: "SISTEMA INTEGRAL" },
-        { label: "Nombre Usuario SI", value: form.integralSystemUserName || EMPTY_VALUE },
-        { section: "INTEGRACIÓN" },
-        { label: "Estado sincronización", value: "Pendiente de sincronización" },
       ];
+    }
+
+    const items: PreviewItem[] = [
+      { section: "ODISEO" },
+      { label: "Correo corporativo", value: form.email || EMPTY_VALUE },
+      { label: "Nombre completo", value: form.fullName || EMPTY_VALUE },
+      { label: "Puesto", value: form.position || EMPTY_VALUE },
+      { label: "Área", value: form.area || EMPTY_VALUE },
+      { label: "Perfil ODISEO", value: selectedProfile?.name || EMPTY_VALUE },
+      { label: "Estado ODISEO", value: form.odiseoUserStatus ? form.odiseoUserStatus.replace(/_/g, " ") : EMPTY_VALUE },
+    ];
+
+    if (form.integralSystemUserName || form.integralSystemUserId) {
+      items.push({ section: "SISTEMA INTEGRAL" });
+      if (form.integralSystemUserName) {
+        items.push({ label: "Nombre Usuario SI", value: form.integralSystemUserName });
+      }
+    }
+
+    items.push({ section: "INTEGRACIÓN" });
+    items.push({ label: "Estado sincronización", value: "Pendiente de sincronización" });
+
+    return items;
+  };
+
+  const previewItems = buildPreviewItems();
 
   return (
     <div className="w-full max-w-none bg-[#f6f8fb]">
@@ -666,29 +680,31 @@ export default function UserCreatePage() {
                     required
                   />
 
-                  <FormInput
-                    label="Puesto"
-                    value={form.position}
-                    onChange={(value) =>
-                      setForm({ ...form, position: value })
-                    }
-                    placeholder="Ej: Analista TI o Data Manager"
-                    error={
-                      submitAttempted
-                        ? validationErrors.position
-                        : undefined
-                    }
-                    required
-                  />
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <FormInput
+                      label="Puesto"
+                      value={form.position}
+                      onChange={(value) =>
+                        setForm({ ...form, position: value })
+                      }
+                      placeholder="Ej: Analista TI o Data Manager"
+                      error={
+                        submitAttempted
+                          ? validationErrors.position
+                          : undefined
+                      }
+                      required
+                    />
 
-                  <FormInput
-                    label="Teléfono"
-                    value={form.phone}
-                    onChange={(value) =>
-                      setForm({ ...form, phone: value })
-                    }
-                    placeholder="Ej: +52 55 1234 5678"
-                  />
+                    <FormInput
+                      label="Teléfono"
+                      value={form.phone}
+                      onChange={(value) =>
+                        setForm({ ...form, phone: value })
+                      }
+                      placeholder="Ej: +52 55 1234 5678"
+                    />
+                  </div>
                 </div>
               </SectionCard>
             )}
@@ -705,49 +721,51 @@ export default function UserCreatePage() {
                 infoContent="El Perfil ODISEO define los permisos del usuario. El Estado es independiente del Sistema Integral."
               >
                 <div className="space-y-3">
-                  <FormSelect
-                    label="Área"
-                    value={form.area}
-                    onChange={handleAreaChange}
-                    options={USER_AREA_OPTIONS}
-                    placeholder="Selecciona el área"
-                    error={
-                      submitAttempted ? validationErrors.area : undefined
-                    }
-                    required
-                  />
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <FormSelect
+                      label="Área"
+                      value={form.area}
+                      onChange={handleAreaChange}
+                      options={USER_AREA_OPTIONS}
+                      placeholder="Selecciona el área"
+                      error={
+                        submitAttempted ? validationErrors.area : undefined
+                      }
+                      required
+                    />
 
-                  <FormSelect
-                    label="Perfil de acceso ODISEO"
-                    value={form.profileCode}
-                    onChange={(value) => setForm({ ...form, profileCode: value as ProfileCode })}
-                    options={profileOptions}
-                    placeholder="Selecciona el perfil"
-                    error={
-                      submitAttempted ? validationErrors.profileCode : undefined
-                    }
-                    required
-                    labelAction={
-                      <InfoTooltip
-                        title="Perfiles de acceso ODISEO"
-                        content="Define el grupo de roles y permisos que tendrá el usuario dentro de ODISEO."
-                      />
-                    }
-                  />
+                    <FormSelect
+                      label="Perfil de acceso ODISEO"
+                      value={form.profileCode}
+                      onChange={(value) => setForm({ ...form, profileCode: value as ProfileCode })}
+                      options={profileOptions}
+                      placeholder="Selecciona el perfil"
+                      error={
+                        submitAttempted ? validationErrors.profileCode : undefined
+                      }
+                      required
+                      labelAction={
+                        <InfoTooltip
+                          title="Perfiles de acceso ODISEO"
+                          content="Define el grupo de roles y permisos que tendrá el usuario dentro de ODISEO."
+                        />
+                      }
+                    />
 
-                  <FormSelect
-                    label="Estado Usuario ODISEO"
-                    value={form.odiseoUserStatus}
-                    onChange={(value) => setForm({ ...form, odiseoUserStatus: value })}
-                    options={[
-                      { value: "PENDIENTE_ACTIVACION", label: "Pendiente de activación" },
-                      { value: "ACTIVO", label: "Activo" },
-                      { value: "INACTIVO", label: "Inactivo" },
-                      { value: "BLOQUEADO", label: "Bloqueado" },
-                    ]}
-                    placeholder="Selecciona el estado"
-                    required
-                  />
+                    <FormSelect
+                      label="Estado Usuario ODISEO"
+                      value={form.odiseoUserStatus}
+                      onChange={(value) => setForm({ ...form, odiseoUserStatus: value })}
+                      options={[
+                        { value: "PENDIENTE_ACTIVACION", label: "Pendiente de activación" },
+                        { value: "ACTIVO", label: "Activo" },
+                        { value: "INACTIVO", label: "Inactivo" },
+                        { value: "BLOQUEADO", label: "Bloqueado" },
+                      ]}
+                      placeholder="Selecciona el estado"
+                      required
+                    />
+                  </div>
                 </div>
               </SectionCard>
             )}
@@ -784,21 +802,23 @@ export default function UserCreatePage() {
                     required
                   />
 
-                  {form.integralSystemUserName && (
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    {form.integralSystemUserName && (
+                      <FormInput
+                        label="Nombre Usuario SI"
+                        value={form.integralSystemUserName}
+                        onChange={() => {}}
+                        disabled
+                      />
+                    )}
+
                     <FormInput
-                      label="Nombre Usuario SI"
-                      value={form.integralSystemUserName}
+                      label="Estado de sincronización"
+                      value="Pendiente de sincronización"
                       onChange={() => {}}
                       disabled
                     />
-                  )}
-
-                  <FormInput
-                    label="Estado de sincronización"
-                    value="Pendiente de sincronización"
-                    onChange={() => {}}
-                    disabled
-                  />
+                  </div>
                 </div>
               </SectionCard>
             )}
@@ -841,15 +861,15 @@ export default function UserCreatePage() {
                     </span>
                   </div>
 
-                  {previewItems.map((item: PreviewItem, index: number) => (
+                  {previewItems.map((item: PreviewItem, index: number) =>
                     item.section ? (
-                      <div key={index} className="mt-3 pt-3 border-t border-slate-100 first:mt-0 first:pt-0 first:border-0">
+                      <div key={index} className={`${index === 0 ? "" : "mt-2 pt-2 border-t border-slate-100"}`}>
                         <span className="text-xs font-bold uppercase text-slate-500">{item.section}</span>
                       </div>
                     ) : (
                       <div
                         key={index}
-                        className="grid grid-cols-[90px_1fr] gap-2 border-b border-slate-100 pb-1 last:border-0"
+                        className="grid grid-cols-[90px_1fr] gap-2 pb-1"
                       >
                         <span className="text-xs font-bold uppercase text-slate-400">
                           {item.label}
@@ -859,7 +879,7 @@ export default function UserCreatePage() {
                         </span>
                       </div>
                     )
-                  ))}
+                  )}
                 </div>
               ) : (
                 <div className="space-y-2 text-sm">
@@ -877,15 +897,15 @@ export default function UserCreatePage() {
                     </div>
                   </div>
 
-                  {previewItems.map((item: PreviewItem, index: number) => (
+                  {previewItems.map((item: PreviewItem, index: number) =>
                     item.section ? (
-                      <div key={index} className="mt-3 pt-3 border-t border-slate-100 first:mt-0 first:pt-0 first:border-0">
+                      <div key={index} className={`${index === 0 ? "" : "mt-2 pt-2 border-t border-slate-100"}`}>
                         <span className="text-xs font-bold uppercase text-slate-500">{item.section}</span>
                       </div>
                     ) : (
                       <div
                         key={index}
-                        className="grid grid-cols-[90px_1fr] gap-2 border-b border-slate-100 pb-1 last:border-0"
+                        className="grid grid-cols-[90px_1fr] gap-2 pb-1"
                       >
                         <span className="text-xs font-bold uppercase text-slate-400">
                           {item.label}
@@ -895,7 +915,7 @@ export default function UserCreatePage() {
                         </span>
                       </div>
                     )
-                  ))}
+                  )}
 
                   {selectedProfile &&
                     explicitFlowState === "newEmailConfirmed" && (
