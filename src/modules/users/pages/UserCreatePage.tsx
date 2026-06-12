@@ -532,7 +532,6 @@ export default function UserCreatePage() {
       { label: "Puesto", value: form.position || EMPTY_VALUE },
       { label: "Área", value: form.area || EMPTY_VALUE },
       { label: "Perfil ODISEO", value: selectedProfile?.name || EMPTY_VALUE },
-      { label: "Estado ODISEO", value: form.odiseoUserStatus ? form.odiseoUserStatus.replace(/_/g, " ") : EMPTY_VALUE },
     ];
 
     if (form.integralSystemUserName || form.integralSystemUserId) {
