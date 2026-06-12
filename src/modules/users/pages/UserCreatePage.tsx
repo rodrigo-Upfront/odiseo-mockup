@@ -715,19 +715,19 @@ export default function UserCreatePage() {
                     />
 
                     <FormSelect
-                      label="Perfil"
+                      label="Perfil de acceso ODISEO"
                       value={form.profileCode}
                       onChange={(value) => setForm({ ...form, profileCode: value as ProfileCode })}
                       options={profileOptions}
-                      placeholder="Selecciona el perfil"
+                      placeholder="Seleccionar perfil"
                       error={
                         submitAttempted ? validationErrors.profileCode : undefined
                       }
                       required
                       labelAction={
                         <InfoTooltip
-                          title="Perfiles de acceso"
-                          content="Define el grupo de roles y permisos que tendrá el usuario en ODISEO."
+                          title="Perfil de acceso ODISEO"
+                          content="Selecciona el perfil que define los permisos y alcance funcional del usuario. Valores permitidos: Administrador, Editor, Auditor, Visor."
                         />
                       }
                     />

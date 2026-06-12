@@ -10,7 +10,7 @@ export type InternalRoleCode =
 export type ProfileCode =
   | "ADMINISTRADOR"
   | "EDITOR"
-  | "APROBADOR"
+  | "AUDITOR"
   | "VISOR";
 
 // Estado propio del Usuario ODISEO
@@ -117,9 +117,9 @@ export const ACCESS_PROFILES: AccessProfile[] = [
     internalRoles: ["EDITOR", "VIEWER"],
   },
   {
-    code: "APROBADOR",
-    name: "Aprobador",
-    internalRoles: ["APPROVER", "VIEWER"],
+    code: "AUDITOR",
+    name: "Auditor",
+    internalRoles: ["AUDITOR", "VIEWER"],
   },
   {
     code: "VISOR",
