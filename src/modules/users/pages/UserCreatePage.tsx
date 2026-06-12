@@ -33,19 +33,25 @@ import { validateSiUser, getSiUserMirrorByCode } from "../../../shared/data/siUs
 const RECENT_NEW_USER_KEY = "odiseo_recent_new_user";
 
 interface FormState {
+  // ODISEO Fields
   email: string;
   fullName: string;
-  phone: string;
   position: string;
   area: string;
-  areaCode?: string;
-  areaLabel?: string;
   profileCode: ProfileCode;
-  profileLabel?: string;
+  odiseoUserStatus: string;
+
+  // SI Reference Fields (read-only, auto-populated)
   integralSystemUserId: string;
   integralSystemUserValue: string;
   integralSystemUserName?: string;
   integralSystemUserStatus?: string;
+
+  // Internal fields (not editable in form)
+  phone?: string;
+  areaCode?: string;
+  areaLabel?: string;
+  profileLabel?: string;
 }
 
 type ExplicitFlowState = "initial" | "existingEmailFound" | "newEmailConfirmed";
@@ -69,14 +75,18 @@ export default function UserCreatePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState<FormState>({
+    // ODISEO Fields
     email: "",
     fullName: "",
-    phone: "",
     position: "",
     area: "",
     profileCode: "" as ProfileCode,
+    odiseoUserStatus: "PENDIENTE_ACTIVACION",
+    // SI Reference Fields
     integralSystemUserId: "",
     integralSystemUserValue: "",
+    // Internal fields
+    phone: "",
   });
 
   const [explicitFlowState, setExplicitFlowState] =
@@ -496,31 +506,34 @@ export default function UserCreatePage() {
     );
   }
 
-  const previewItems = existingUserPreview
+  interface PreviewItem {
+    label?: string;
+    value?: string;
+    section?: string;
+  }
+
+  const previewItems: PreviewItem[] = existingUserPreview
     ? [
-        { label: "Código ODISEO", value: existingUserPreview.code },
-        { label: "Código Trabajador", value: existingUserPreview.workerCode },
+        { label: "ID ODISEO", value: existingUserPreview.code },
+        { label: "Correo", value: existingUserPreview.email },
+        { label: "Nombre completo", value: existingUserPreview.fullName },
+        { label: "Puesto", value: existingUserPreview.position },
         { label: "Área", value: existingUserPreview.area },
         { label: "Perfil", value: getRoleLabel(existingUserPreview.role) },
-        {
-          label: "Estado Actual",
-          value: getUserStatusLabel(existingUserPreview.status),
-        },
+        { label: "Estado", value: getUserStatusLabel(existingUserPreview.status) },
       ]
     : [
-        { label: "Correo", value: form.email || EMPTY_VALUE },
+        { section: "ODISEO" },
+        { label: "Correo corporativo", value: form.email || EMPTY_VALUE },
         { label: "Nombre completo", value: form.fullName || EMPTY_VALUE },
-        { label: "Área", value: form.area || EMPTY_VALUE },
         { label: "Puesto", value: form.position || EMPTY_VALUE },
+        { label: "Área", value: form.area || EMPTY_VALUE },
         { label: "Perfil ODISEO", value: selectedProfile?.name || EMPTY_VALUE },
-        { label: "Código y nombre SI", value: form.integralSystemUserId && form.integralSystemUserValue ? `${form.integralSystemUserId} - ${form.integralSystemUserValue}` : EMPTY_VALUE },
+        { label: "Estado ODISEO", value: form.odiseoUserStatus ? form.odiseoUserStatus.replace(/_/g, " ") : EMPTY_VALUE },
+        { section: "SISTEMA INTEGRAL" },
         { label: "Nombre Usuario SI", value: form.integralSystemUserName || EMPTY_VALUE },
-        {
-          label: "Estado Usuario SI",
-          value: form.integralSystemUserStatus === "*" ? "Inactivo" : form.integralSystemUserStatus === "" ? "Activo" : EMPTY_VALUE,
-        },
-        { label: "Estado ODISEO", value: "Pendiente de activación" },
-        { label: "Sincronización", value: "Pendiente de sincronización" },
+        { section: "INTEGRACIÓN" },
+        { label: "Estado sincronización", value: "Pendiente de sincronización" },
       ];
 
   return (
@@ -563,17 +576,15 @@ export default function UserCreatePage() {
                       ...prev,
                       email: value,
                       fullName: "",
-                      phone: "",
                       position: "",
                       area: "",
-                      areaCode: undefined,
-                      areaLabel: undefined,
                       profileCode: "" as ProfileCode,
-                      profileLabel: undefined,
+                      odiseoUserStatus: "PENDIENTE_ACTIVACION",
                       integralSystemUserId: "",
                       integralSystemUserValue: "",
                       integralSystemUserName: undefined,
                       integralSystemUserStatus: undefined,
+                      phone: "",
                     }));
 
                     setExistingUserPreview(null);
@@ -616,8 +627,8 @@ export default function UserCreatePage() {
                 status={isUserDataStepComplete ? "completed" : "pending"}
                 color="#00395A"
                 required
-                infoTitle="Datos del usuario ODISEO"
-                infoContent="Completa los datos propios del usuario dentro del portal. Puedes ingresar la información manualmente o cargar una plantilla Excel después de validar que el correo no existe."
+                infoTitle="Datos propios del usuario ODISEO"
+                infoContent="Completa la información del usuario en el portal. Estos datos son independientes del Sistema Integral."
               >
                 <div className="space-y-3">
                   <input
@@ -631,7 +642,7 @@ export default function UserCreatePage() {
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <h4 className="text-xs font-semibold uppercase text-slate-700 mb-3">
-                        Campos de usuario
+                        Información del usuario
                       </h4>
                     </div>
                     <ExcelTemplateActions
@@ -655,78 +666,88 @@ export default function UserCreatePage() {
                     required
                   />
 
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <FormInput
-                      label="Teléfono"
-                      value={form.phone}
-                      onChange={(value) =>
-                        setForm({ ...form, phone: value })
-                      }
-                      placeholder="Ej: +52 55 1234 5678"
-                    />
+                  <FormInput
+                    label="Puesto"
+                    value={form.position}
+                    onChange={(value) =>
+                      setForm({ ...form, position: value })
+                    }
+                    placeholder="Ej: Analista TI o Data Manager"
+                    error={
+                      submitAttempted
+                        ? validationErrors.position
+                        : undefined
+                    }
+                    required
+                  />
 
-                    <FormInput
-                      label="Puesto"
-                      value={form.position}
-                      onChange={(value) =>
-                        setForm({ ...form, position: value })
-                      }
-                      placeholder="Ej: Analista TI o Data Manager"
-                      error={
-                        submitAttempted
-                          ? validationErrors.position
-                          : undefined
-                      }
-                      required
-                    />
-                  </div>
+                  <FormInput
+                    label="Teléfono"
+                    value={form.phone}
+                    onChange={(value) =>
+                      setForm({ ...form, phone: value })
+                    }
+                    placeholder="Ej: +52 55 1234 5678"
+                  />
                 </div>
               </SectionCard>
             )}
 
-            {/* SECCIÓN 3: Área y perfil */}
+            {/* SECCIÓN 3: Área, Perfil y Estado ODISEO */}
             {!existingUserPreview && explicitFlowState === "newEmailConfirmed" && (
               <SectionCard
                 number={3}
-                title="Área y perfil"
+                title="Perfil y estado ODISEO"
                 status={isAccessStepComplete ? "completed" : "pending"}
                 color="#00395A"
                 required
-                infoTitle="Organización y perfil"
-                infoContent="El área y el puesto son datos organizacionales. El Perfil ODISEO es el que define los permisos del usuario dentro del portal."
+                infoTitle="Configuración de acceso y estado"
+                infoContent="El Perfil ODISEO define los permisos del usuario. El Estado es independiente del Sistema Integral."
               >
                 <div className="space-y-3">
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <FormSelect
-                      label="Área"
-                      value={form.area}
-                      onChange={handleAreaChange}
-                      options={USER_AREA_OPTIONS}
-                      placeholder="Selecciona el área"
-                      error={
-                        submitAttempted ? validationErrors.area : undefined
-                      }
-                      required
-                    />
+                  <FormSelect
+                    label="Área"
+                    value={form.area}
+                    onChange={handleAreaChange}
+                    options={USER_AREA_OPTIONS}
+                    placeholder="Selecciona el área"
+                    error={
+                      submitAttempted ? validationErrors.area : undefined
+                    }
+                    required
+                  />
 
-                    <FormSelect
-                      label="Perfil de acceso ODISEO"
-                      value={form.profileCode}
-                      onChange={(value) => setForm({ ...form, profileCode: value as ProfileCode })}
-                      options={profileOptions}
-                      placeholder="Selecciona el perfil"
-                      error={
-                        submitAttempted ? validationErrors.profileCode : undefined
-                      }
-                      required
-                      labelAction={
-                        <InfoTooltip
-                          title="Perfiles de acceso ODISEO"
-                          content="Define el grupo de roles y permisos que tendrá el usuario dentro de ODISEO."
-                        />
-                      }
-                    />
-                  </div>
+                  <FormSelect
+                    label="Perfil de acceso ODISEO"
+                    value={form.profileCode}
+                    onChange={(value) => setForm({ ...form, profileCode: value as ProfileCode })}
+                    options={profileOptions}
+                    placeholder="Selecciona el perfil"
+                    error={
+                      submitAttempted ? validationErrors.profileCode : undefined
+                    }
+                    required
+                    labelAction={
+                      <InfoTooltip
+                        title="Perfiles de acceso ODISEO"
+                        content="Define el grupo de roles y permisos que tendrá el usuario dentro de ODISEO."
+                      />
+                    }
+                  />
+
+                  <FormSelect
+                    label="Estado Usuario ODISEO"
+                    value={form.odiseoUserStatus}
+                    onChange={(value) => setForm({ ...form, odiseoUserStatus: value })}
+                    options={[
+                      { value: "PENDIENTE_ACTIVACION", label: "Pendiente de activación" },
+                      { value: "ACTIVO", label: "Activo" },
+                      { value: "INACTIVO", label: "Inactivo" },
+                      { value: "BLOQUEADO", label: "Bloqueado" },
+                    ]}
+                    placeholder="Selecciona el estado"
+                    required
+                  />
                 </div>
               </SectionCard>
             )}
@@ -735,12 +756,12 @@ export default function UserCreatePage() {
             {!existingUserPreview && explicitFlowState === "newEmailConfirmed" && (
               <SectionCard
                 number={4}
-                title="Usuario Sistema Integral"
+                title="Vinculación Sistema Integral"
                 status={isIntegralUserStepComplete ? "completed" : "pending"}
                 color="#00395A"
                 required
-                infoTitle="Sincronización con Sistema Integral"
-                infoContent="Registra el usuario del Sistema Integral para sincronizarlo con el usuario ODISEO y mantener trazabilidad entre ambos sistemas."
+                infoTitle="Referencia al Sistema Integral"
+                infoContent="Vincula este usuario ODISEO con un usuario del Sistema Integral para sincronización y trazabilidad. Los datos del SI son solo informativos."
               >
                 <div className="space-y-3">
                   <SiUserSelector
@@ -763,35 +784,21 @@ export default function UserCreatePage() {
                     required
                   />
 
-                  <FormInput
-                    label="Código y nombre SI"
-                    value={form.integralSystemUserId && form.integralSystemUserValue ? `${form.integralSystemUserId} - ${form.integralSystemUserValue}` : "—"}
-                    onChange={() => {}}
-                    disabled
-                  />
-
-                  <FormInput
-                    label="Nombre Usuario SI"
-                    value={form.integralSystemUserName || "—"}
-                    onChange={() => {}}
-                    disabled
-                  />
-
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  {form.integralSystemUserName && (
                     <FormInput
-                      label="Estado Usuario SI"
-                      value={form.integralSystemUserStatus === "*" ? "Inactivo" : form.integralSystemUserStatus === "" ? "Activo" : "—"}
+                      label="Nombre Usuario SI"
+                      value={form.integralSystemUserName}
                       onChange={() => {}}
                       disabled
                     />
+                  )}
 
-                    <FormInput
-                      label="Estado de sincronización"
-                      value="Pendiente de sincronización"
-                      onChange={() => {}}
-                      disabled
-                    />
-                  </div>
+                  <FormInput
+                    label="Estado de sincronización"
+                    value="Pendiente de sincronización"
+                    onChange={() => {}}
+                    disabled
+                  />
                 </div>
               </SectionCard>
             )}
@@ -834,18 +841,24 @@ export default function UserCreatePage() {
                     </span>
                   </div>
 
-                  {previewItems.map((item, index) => (
-                    <div
-                      key={index}
-                      className="grid grid-cols-[90px_1fr] gap-2 border-b border-slate-100 pb-1 last:border-0"
-                    >
-                      <span className="text-xs font-bold uppercase text-slate-400">
-                        {item.label}
-                      </span>
-                      <span className="text-xs font-semibold text-slate-700">
-                        {item.value || EMPTY_VALUE}
-                      </span>
-                    </div>
+                  {previewItems.map((item: PreviewItem, index: number) => (
+                    item.section ? (
+                      <div key={index} className="mt-3 pt-3 border-t border-slate-100 first:mt-0 first:pt-0 first:border-0">
+                        <span className="text-xs font-bold uppercase text-slate-500">{item.section}</span>
+                      </div>
+                    ) : (
+                      <div
+                        key={index}
+                        className="grid grid-cols-[90px_1fr] gap-2 border-b border-slate-100 pb-1 last:border-0"
+                      >
+                        <span className="text-xs font-bold uppercase text-slate-400">
+                          {item.label}
+                        </span>
+                        <span className="text-xs font-semibold text-slate-700">
+                          {item.value || EMPTY_VALUE}
+                        </span>
+                      </div>
+                    )
                   ))}
                 </div>
               ) : (
@@ -864,18 +877,24 @@ export default function UserCreatePage() {
                     </div>
                   </div>
 
-                  {previewItems.map((item, index) => (
-                    <div
-                      key={index}
-                      className="grid grid-cols-[90px_1fr] gap-2 border-b border-slate-100 pb-1 last:border-0"
-                    >
-                      <span className="text-xs font-bold uppercase text-slate-400">
-                        {item.label}
-                      </span>
-                      <span className="text-xs font-semibold text-slate-700">
-                        {item.value || EMPTY_VALUE}
-                      </span>
-                    </div>
+                  {previewItems.map((item: PreviewItem, index: number) => (
+                    item.section ? (
+                      <div key={index} className="mt-3 pt-3 border-t border-slate-100 first:mt-0 first:pt-0 first:border-0">
+                        <span className="text-xs font-bold uppercase text-slate-500">{item.section}</span>
+                      </div>
+                    ) : (
+                      <div
+                        key={index}
+                        className="grid grid-cols-[90px_1fr] gap-2 border-b border-slate-100 pb-1 last:border-0"
+                      >
+                        <span className="text-xs font-bold uppercase text-slate-400">
+                          {item.label}
+                        </span>
+                        <span className="text-xs font-semibold text-slate-700">
+                          {item.value || EMPTY_VALUE}
+                        </span>
+                      </div>
+                    )
                   ))}
 
                   {selectedProfile &&
