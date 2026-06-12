@@ -38,6 +38,7 @@ export const APP_ROUTES = {
   },
 
   CATALOG_MANAGEMENT: {
-    LIST: '/catalog-management',
+    LIST: '/catalogs',
+    VIEW_ALL: '/catalogs/view-all',
   }
 };
