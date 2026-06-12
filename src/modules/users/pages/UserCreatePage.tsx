@@ -207,25 +207,6 @@ export default function UserCreatePage() {
     );
   };
 
-  const getUserStatusLabel = (status?: string) => {
-    switch (status) {
-      case "active":
-        return "Activo";
-      case "inactive":
-        return "Inactivo";
-      case "pending_activation":
-        return "Pendiente de activación";
-      case "pending_validation":
-        return "Pendiente de validación";
-      case "pending_sync":
-        return "Pendiente de sincronización";
-      case "blocked":
-        return "Bloqueado";
-      default:
-        return status || EMPTY_VALUE;
-    }
-  };
-
   const handleDownloadTemplate = () => {
     const headers = [
       "Correo Corporativo",
@@ -515,13 +496,12 @@ export default function UserCreatePage() {
   const buildPreviewItems = (): PreviewItem[] => {
     if (existingUserPreview) {
       return [
-        { label: "ID ODISEO", value: existingUserPreview.code },
-        { label: "Correo", value: existingUserPreview.email },
+        { label: "Código de Usuario", value: existingUserPreview.code },
+        { label: "Correo corporativo", value: existingUserPreview.email },
         { label: "Nombre completo", value: existingUserPreview.fullName },
         { label: "Puesto", value: existingUserPreview.position },
         { label: "Área", value: existingUserPreview.area },
         { label: "Perfil", value: getRoleLabel(existingUserPreview.role) },
-        { label: "Estado", value: getUserStatusLabel(existingUserPreview.status) },
       ];
     }
 
@@ -529,15 +509,19 @@ export default function UserCreatePage() {
       { section: "ODISEO" },
       { label: "Correo corporativo", value: form.email || EMPTY_VALUE },
       { label: "Nombre completo", value: form.fullName || EMPTY_VALUE },
+      { label: "Teléfono", value: form.phone || EMPTY_VALUE },
       { label: "Puesto", value: form.position || EMPTY_VALUE },
       { label: "Área", value: form.area || EMPTY_VALUE },
-      { label: "Perfil ODISEO", value: selectedProfile?.name || EMPTY_VALUE },
+      { label: "Perfil", value: selectedProfile?.name || EMPTY_VALUE },
     ];
 
     if (form.integralSystemUserName || form.integralSystemUserId) {
       items.push({ section: "SISTEMA INTEGRAL" });
       if (form.integralSystemUserName) {
-        items.push({ label: "Nombre Usuario SI", value: form.integralSystemUserName });
+        items.push({ label: "Usuario SI", value: form.integralSystemUserName });
+      }
+      if (form.integralSystemUserStatus) {
+        items.push({ label: "Estado SI", value: form.integralSystemUserStatus });
       }
     }
 
@@ -632,16 +616,16 @@ export default function UserCreatePage() {
               </div>
             </SectionCard>
 
-            {/* SECCIÓN 2: Datos ODISEO */}
+            {/* SECCIÓN 2: Información del usuario */}
             {!existingUserPreview && explicitFlowState === "newEmailConfirmed" && (
               <SectionCard
                 number={2}
-                title="Datos ODISEO"
+                title="Información del usuario"
                 status={isUserDataStepComplete ? "completed" : "pending"}
                 color="#00395A"
                 required
-                infoTitle="Datos propios del usuario ODISEO"
-                infoContent="Completa la información del usuario en el portal. Estos datos son independientes del Sistema Integral."
+                infoTitle="Datos personales y laborales"
+                infoContent="Ingresa la información personal, puesto y teléfono de contacto del usuario."
               >
                 <div className="space-y-3">
                   <input
@@ -708,16 +692,16 @@ export default function UserCreatePage() {
               </SectionCard>
             )}
 
-            {/* SECCIÓN 3: Área, Perfil y Estado ODISEO */}
+            {/* SECCIÓN 3: Área, Perfil y Estado del usuario */}
             {!existingUserPreview && explicitFlowState === "newEmailConfirmed" && (
               <SectionCard
                 number={3}
-                title="Perfil y estado ODISEO"
+                title="Perfil y estado del usuario"
                 status={isAccessStepComplete ? "completed" : "pending"}
                 color="#00395A"
                 required
                 infoTitle="Configuración de acceso y estado"
-                infoContent="El Perfil ODISEO define los permisos del usuario. El Estado es independiente del Sistema Integral."
+                infoContent="El Perfil define los permisos del usuario. El Estado es independiente del Sistema Integral."
               >
                 <div className="space-y-3">
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -734,7 +718,7 @@ export default function UserCreatePage() {
                     />
 
                     <FormSelect
-                      label="Perfil de acceso ODISEO"
+                      label="Perfil"
                       value={form.profileCode}
                       onChange={(value) => setForm({ ...form, profileCode: value as ProfileCode })}
                       options={profileOptions}
@@ -745,14 +729,14 @@ export default function UserCreatePage() {
                       required
                       labelAction={
                         <InfoTooltip
-                          title="Perfiles de acceso ODISEO"
-                          content="Define el grupo de roles y permisos que tendrá el usuario dentro de ODISEO."
+                          title="Perfiles de acceso"
+                          content="Define el grupo de roles y permisos que tendrá el usuario en ODISEO."
                         />
                       }
                     />
 
                     <FormSelect
-                      label="Estado Usuario ODISEO"
+                      label="Estado del usuario"
                       value={form.odiseoUserStatus}
                       onChange={(value) => setForm({ ...form, odiseoUserStatus: value })}
                       options={[
@@ -853,7 +837,7 @@ export default function UserCreatePage() {
 
                   <div className="grid grid-cols-[90px_1fr] gap-2 border-b border-slate-100 pb-1">
                     <span className="text-xs font-bold uppercase text-slate-400">
-                      Código ODISEO
+                      Código de Usuario
                     </span>
                     <span className="text-xs font-semibold text-slate-700">
                       {existingUserPreview.code || EMPTY_VALUE}
@@ -884,7 +868,7 @@ export default function UserCreatePage() {
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                     <span className="text-xs font-bold uppercase text-slate-400">
-                      ID
+                      Código de Usuario
                     </span>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-semibold text-slate-700">
