@@ -23,6 +23,8 @@ import {
 import { mockSendEmail } from "../../../shared/data/notificationStorage";
 import FormCard from "../../../shared/components/forms/FormCard";
 import ActionButton from "../../../shared/components/buttons/ActionButton";
+import UserAccessAuditHistory from "../../../shared/components/audit/UserAccessAuditHistory";
+import UserAccessManagement from "../../../shared/components/audit/UserAccessManagement";
 
 const STATUS_DESCRIPTIONS: Record<string, string> = {
   active: "El usuario está activo y puede acceder al sistema.",
@@ -480,6 +482,23 @@ export default function UserDetailPage() {
               fullWidth
             />
           </div>
+
+          {/* Access Management Component */}
+          <UserAccessManagement
+            user={user}
+            currentUser={currentUser}
+            onAccessChanged={() => {
+              const updatedUser = getUserById(user.id);
+              if (updatedUser) {
+                setUser(updatedUser);
+              }
+            }}
+          />
+
+          {/* Audit History Component */}
+          <FormCard title="Historial de Auditoría" icon="🔍" color="#0EA5E9">
+            <UserAccessAuditHistory userId={user.id} maxItems={5} />
+          </FormCard>
         </div>
       </div>
 
