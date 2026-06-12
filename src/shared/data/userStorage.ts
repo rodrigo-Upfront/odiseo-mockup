@@ -1,6 +1,9 @@
 import seedUsers from "./seeds/users.json";
 import { canTransitionUserStatus, registerUserStatusChange } from "./userStatusStorage";
-import type { OdiseoUserStatus, SyncStatus, ProfileCode, InternalRoleCode } from "../security/roleProfiles";
+import type { SyncStatus, ProfileCode, InternalRoleCode } from "../security/roleProfiles";
+import { getAccessStatusByCode, getAccessStatusById } from "./accessStatusCatalog";
+import type { AccessStatusCode } from "./accessStatusCatalog";
+import { registerAccessAuditEvent } from "./userAccessAuditStorage";
 
 const USERS_STORAGE_KEY = "odiseo_users";
 const CURRENT_USER_KEY = "odiseo_current_user";
@@ -21,36 +24,55 @@ export type UserStatus =
   | "blocked";
 
 export type User = {
-  id: string;
-  code: string;
-  email: string;
+  // Technical Primary Key and Visible Code
+  id: string; // TbUSuPk (USR-XXXXXX)
+  code: string; // TbUSuCd (US-XXXXXX)
+
+  // User Information
+  email: string; // TbUSuCrr - Login principal
   password: string;
-  fullName: string;
-  phone?: string;
+  fullName: string; // TbUSuNc
+  phone?: string; // TbUSuTel
+  position: string; // TbUSuPt
+  area?: string; // TbUSuAr
+  areaCode?: string;
+  areaLabel?: string;
+
+  // Access Control
+  profileCode?: ProfileCode; // TbUSuPl
+  profileLabel?: string;
+  roles?: InternalRoleCode[];
+  accessStatusId: number; // TbUSuEstFk - Foreign key to access status catalog
+
+  // Security
+  failedLoginAttempts: number; // TbUSuIntFall - Default 0, blocks user at 3
+  blockedAt?: string; // TbUSuFBloq - When user was blocked
+
+  // Logical Control
+  activeLogical: boolean; // TbUSuActi - 1 = Vigente, 0 = Inactivo/baja lógica
+
+  // Legacy System Integration
   role: UserRole;
   status: UserStatus;
   workerCode: string;
-  position: string;
-  area?: string;
-  areaCode?: string;
-  areaLabel?: string;
-  profileCode?: ProfileCode;
-  profileLabel?: string;
-  roles?: InternalRoleCode[];
   integralSystemUserId?: string;
   integralSystemUserValue?: string;
   integralSystemUserName?: string;
   integralSystemUserStatus?: string;
-  odiseoUserStatus?: OdiseoUserStatus;
   syncStatus?: SyncStatus;
-  activeLogical?: boolean;
-  createdAt: string;
-  updatedAt?: string;
+
+  // Audit Fields
+  createdAt: string; // TbUSuReg
+  createdByUser: string; // TbUSuUsuRegFk
+  updatedAt?: string; // TbUSuFUlt
+  updatedByUser?: string; // TbUSuUsuModFk
 };
 
 export type UserPublic = Omit<User, "password">;
 
 const SEED_DATE = "2026-01-01T00:00:00.000Z";
+const SYSTEM_USER = "SISTEMA";
+const HABILITADO_STATUS_ID = 2; // ID from ACCESS_STATUS_CATALOG
 
 const AREA_USERS: User[] = [
   {
@@ -64,7 +86,11 @@ const AREA_USERS: User[] = [
     workerCode: "GEN-ADMIN",
     position: "Administrador del Portal",
     area: "TI",
+    accessStatusId: HABILITADO_STATUS_ID,
+    failedLoginAttempts: 0,
+    activeLogical: true,
     createdAt: SEED_DATE,
+    createdByUser: SYSTEM_USER,
   },
   {
     id: "USR-000002",
@@ -77,7 +103,11 @@ const AREA_USERS: User[] = [
     workerCode: "GEN-COMERCIAL",
     position: "Ejecutivo Comercial",
     area: "Comercial",
+    accessStatusId: HABILITADO_STATUS_ID,
+    failedLoginAttempts: 0,
+    activeLogical: true,
     createdAt: SEED_DATE,
+    createdByUser: SYSTEM_USER,
   },
   {
     id: "USR-000003",
@@ -90,7 +120,11 @@ const AREA_USERS: User[] = [
     workerCode: "GEN-CS",
     position: "Customer Service",
     area: "Customer Service",
+    accessStatusId: HABILITADO_STATUS_ID,
+    failedLoginAttempts: 0,
+    activeLogical: true,
     createdAt: SEED_DATE,
+    createdByUser: SYSTEM_USER,
   },
   {
     id: "USR-000004",
@@ -103,7 +137,11 @@ const AREA_USERS: User[] = [
     workerCode: "GEN-MD",
     position: "Master Data",
     area: "Master Data",
+    accessStatusId: HABILITADO_STATUS_ID,
+    failedLoginAttempts: 0,
+    activeLogical: true,
     createdAt: SEED_DATE,
+    createdByUser: SYSTEM_USER,
   },
 ];
 
@@ -126,6 +164,10 @@ function normalizeUser(user: any): User {
     password,
     email: normalizeEmail(user.email),
     fullName: user.fullName || user.name || "Usuario",
+    accessStatusId: user.accessStatusId || HABILITADO_STATUS_ID,
+    failedLoginAttempts: user.failedLoginAttempts || 0,
+    activeLogical: user.activeLogical !== false,
+    createdByUser: user.createdByUser || SYSTEM_USER,
   };
 }
 
@@ -268,7 +310,7 @@ export function saveUserRecord(record: User): void {
 }
 
 export function createUser(
-  newUser: Partial<Pick<User, "workerCode" | "position" | "fullName" | "phone" | "areaCode" | "areaLabel" | "profileCode" | "profileLabel" | "roles" | "integralSystemUserId" | "integralSystemUserValue" | "integralSystemUserName" | "integralSystemUserStatus" | "odiseoUserStatus" | "syncStatus" | "activeLogical" | "updatedAt">> &
+  newUser: Partial<Pick<User, "workerCode" | "position" | "fullName" | "phone" | "areaCode" | "areaLabel" | "profileCode" | "profileLabel" | "roles" | "integralSystemUserId" | "integralSystemUserValue" | "integralSystemUserName" | "integralSystemUserStatus" | "syncStatus" | "createdByUser" | "updatedByUser">> &
     Omit<
       User,
       | "id"
@@ -287,14 +329,15 @@ export function createUser(
       | "integralSystemUserValue"
       | "integralSystemUserName"
       | "integralSystemUserStatus"
-      | "odiseoUserStatus"
       | "syncStatus"
-      | "activeLogical"
-      | "updatedAt"
+      | "createdByUser"
+      | "updatedByUser"
     >
 ): User {
   const now = new Date().toISOString();
   const allUsers = getAllUsers();
+  const currentUser = getCurrentUser();
+  const executingUser = currentUser?.fullName || SYSTEM_USER;
 
   const maxNumber = Math.max(
     0,
@@ -302,6 +345,7 @@ export function createUser(
   );
 
   const nextNumber = maxNumber + 1;
+  const PENDIENTE_ACTIVACION_STATUS_ID = 1; // From ACCESS_STATUS_CATALOG
 
   const user: User = {
     ...newUser,
@@ -312,6 +356,7 @@ export function createUser(
     phone: newUser.phone,
     workerCode: newUser.workerCode || "",
     position: newUser.position || "",
+    area: newUser.area,
     areaCode: newUser.areaCode,
     areaLabel: newUser.areaLabel,
     profileCode: newUser.profileCode,
@@ -321,12 +366,16 @@ export function createUser(
     integralSystemUserValue: newUser.integralSystemUserValue,
     integralSystemUserName: newUser.integralSystemUserName,
     integralSystemUserStatus: newUser.integralSystemUserStatus,
-    odiseoUserStatus: newUser.odiseoUserStatus || "PENDIENTE_ACTIVACION",
+    accessStatusId: PENDIENTE_ACTIVACION_STATUS_ID, // Always PENDIENTE_ACTIVACION on creation
+    failedLoginAttempts: 0,
     syncStatus: newUser.syncStatus || "PENDIENTE_SINCRONIZACION",
-    activeLogical: newUser.activeLogical !== false,
+    activeLogical: true, // Always true on creation
     status: newUser.status || "pending_activation",
+    role: newUser.role,
     createdAt: now,
+    createdByUser: newUser.createdByUser || executingUser,
     updatedAt: now,
+    updatedByUser: newUser.updatedByUser || executingUser,
   };
 
   saveUserRecord(user);
@@ -337,6 +386,18 @@ export function createUser(
     user.status,
     "system",
     "Usuario ODISEO creado - pendiente de activación"
+  );
+
+  // Register audit event
+  registerAccessAuditEvent(
+    user.id,
+    "CREAR_USUARIO",
+    user.id,
+    executingUser,
+    {
+      origin: "Manual",
+      details: `Usuario creado: ${user.fullName} (${user.email})`,
+    }
   );
 
   return user;
@@ -361,6 +422,9 @@ export function updateUser(
     );
   }
 
+  const currentUser = getCurrentUser();
+  const executingUser = currentUser?.fullName || SYSTEM_USER;
+
   const updated: User = {
     ...user,
     ...updates,
@@ -368,6 +432,7 @@ export function updateUser(
     fullName: updates.fullName || user.fullName,
     status: nextStatus,
     phone: updates.phone !== undefined ? updates.phone : user.phone,
+    area: updates.area !== undefined ? updates.area : user.area,
     areaCode: updates.areaCode !== undefined ? updates.areaCode : user.areaCode,
     areaLabel: updates.areaLabel !== undefined ? updates.areaLabel : user.areaLabel,
     profileCode: updates.profileCode !== undefined ? updates.profileCode : user.profileCode,
@@ -377,10 +442,13 @@ export function updateUser(
     integralSystemUserValue: updates.integralSystemUserValue !== undefined ? updates.integralSystemUserValue : user.integralSystemUserValue,
     integralSystemUserName: updates.integralSystemUserName !== undefined ? updates.integralSystemUserName : user.integralSystemUserName,
     integralSystemUserStatus: updates.integralSystemUserStatus !== undefined ? updates.integralSystemUserStatus : user.integralSystemUserStatus,
-    odiseoUserStatus: updates.odiseoUserStatus !== undefined ? updates.odiseoUserStatus : user.odiseoUserStatus,
+    accessStatusId: updates.accessStatusId !== undefined ? updates.accessStatusId : user.accessStatusId,
+    failedLoginAttempts: updates.failedLoginAttempts !== undefined ? updates.failedLoginAttempts : user.failedLoginAttempts,
+    blockedAt: updates.blockedAt !== undefined ? updates.blockedAt : user.blockedAt,
     syncStatus: updates.syncStatus !== undefined ? updates.syncStatus : user.syncStatus,
     activeLogical: updates.activeLogical !== undefined ? updates.activeLogical : user.activeLogical,
     updatedAt: new Date().toISOString(),
+    updatedByUser: updates.updatedByUser || executingUser,
   };
 
   saveUserRecord(updated);
@@ -592,6 +660,216 @@ export const splitFullName = (value: string) => {
   return {
   };
 };
+
+// Access Status Management Functions
+export function changeAccessStatus(
+  userId: string,
+  newAccessStatusId: number,
+  changedBy: string,
+  details?: string
+): boolean {
+  const user = getUserById(userId);
+  if (!user) return false;
+
+  const oldAccessStatusId = user.accessStatusId;
+
+  const updated = updateUser(userId, {
+    accessStatusId: newAccessStatusId,
+    updatedByUser: changedBy,
+  });
+
+  if (updated) {
+    registerAccessAuditEvent(
+      userId,
+      "CAMBIO_ESTADO_ACCESO",
+      userId,
+      changedBy,
+      {
+        fieldModified: "accessStatusId",
+        oldValue: oldAccessStatusId,
+        newValue: newAccessStatusId,
+        origin: "Manual",
+        details: details || `Estado de acceso cambiado de ${oldAccessStatusId} a ${newAccessStatusId}`,
+      }
+    );
+    return true;
+  }
+
+  return false;
+}
+
+export function recordFailedLoginAttempt(userId: string): boolean {
+  const user = getUserById(userId);
+  if (!user) return false;
+
+  const currentAttempts = user.failedLoginAttempts;
+  const newAttempts = currentAttempts + 1;
+  const MAX_ATTEMPTS = 3;
+  const BLOCKED_STATUS_ID = 3; // From ACCESS_STATUS_CATALOG
+
+  registerAccessAuditEvent(
+    userId,
+    "INTENTO_LOGIN_FALLIDO",
+    userId,
+    SYSTEM_USER,
+    {
+      fieldModified: "failedLoginAttempts",
+      oldValue: currentAttempts,
+      newValue: newAttempts,
+      origin: "Seguridad",
+      details: `Intento fallido de login (${newAttempts}/${MAX_ATTEMPTS})`,
+    }
+  );
+
+  // Block user if max attempts reached
+  if (newAttempts >= MAX_ATTEMPTS) {
+    const now = new Date().toISOString();
+    updateUser(userId, {
+      failedLoginAttempts: newAttempts,
+      accessStatusId: BLOCKED_STATUS_ID,
+      blockedAt: now,
+      updatedByUser: SYSTEM_USER,
+    });
+
+    registerAccessAuditEvent(
+      userId,
+      "BLOQUEAR_USUARIO",
+      userId,
+      SYSTEM_USER,
+      {
+        fieldModified: "accessStatusId",
+        oldValue: user.accessStatusId,
+        newValue: BLOCKED_STATUS_ID,
+        origin: "Seguridad",
+        details: `Usuario bloqueado por ${MAX_ATTEMPTS} intentos fallidos de login`,
+      }
+    );
+
+    return true;
+  }
+
+  // Update failed attempts only
+  updateUser(userId, {
+    failedLoginAttempts: newAttempts,
+    updatedByUser: SYSTEM_USER,
+  });
+
+  return false;
+}
+
+export function recordSuccessfulLogin(userId: string): boolean {
+  const user = getUserById(userId);
+  if (!user) return false;
+
+  if (user.failedLoginAttempts > 0) {
+    updateUser(userId, {
+      failedLoginAttempts: 0,
+      updatedByUser: SYSTEM_USER,
+    });
+
+    registerAccessAuditEvent(
+      userId,
+      "LOGIN_EXITOSO",
+      userId,
+      SYSTEM_USER,
+      {
+        fieldModified: "failedLoginAttempts",
+        oldValue: user.failedLoginAttempts,
+        newValue: 0,
+        origin: "Sistema",
+        details: "Reinicio de contador de intentos fallidos tras login exitoso",
+      }
+    );
+  }
+
+  return true;
+}
+
+export function unblockUserAccess(userId: string, unlockedBy: string): boolean {
+  const user = getUserById(userId);
+  if (!user) return false;
+
+  const HABILITADO_STATUS_ID = 2; // From ACCESS_STATUS_CATALOG
+
+  updateUser(userId, {
+    accessStatusId: HABILITADO_STATUS_ID,
+    failedLoginAttempts: 0,
+    blockedAt: undefined,
+    updatedByUser: unlockedBy,
+  });
+
+  registerAccessAuditEvent(
+    userId,
+    "DESBLOQUEAR_USUARIO",
+    userId,
+    unlockedBy,
+    {
+      fieldModified: "accessStatusId",
+      oldValue: user.accessStatusId,
+      newValue: HABILITADO_STATUS_ID,
+      origin: "Manual",
+      details: "Usuario desbloqueado administrativamente",
+    }
+  );
+
+  return true;
+}
+
+export function activateUserPassword(userId: string, activatedBy: string): boolean {
+  const user = getUserById(userId);
+  if (!user) return false;
+
+  const HABILITADO_STATUS_ID = 2; // From ACCESS_STATUS_CATALOG
+  const PENDIENTE_STATUS_ID = 1;
+
+  updateUser(userId, {
+    accessStatusId: HABILITADO_STATUS_ID,
+    failedLoginAttempts: 0,
+    updatedByUser: activatedBy,
+  });
+
+  registerAccessAuditEvent(
+    userId,
+    "ACTIVACION_CONTRASENA",
+    userId,
+    activatedBy,
+    {
+      fieldModified: "accessStatusId",
+      oldValue: PENDIENTE_STATUS_ID,
+      newValue: HABILITADO_STATUS_ID,
+      origin: "Sistema",
+      details: "Usuario activó su contraseña con éxito",
+    }
+  );
+
+  return true;
+}
+
+export function inactivateUserLogical(userId: string, inactivatedBy: string): boolean {
+  const user = getUserById(userId);
+  if (!user) return false;
+
+  updateUser(userId, {
+    activeLogical: false,
+    updatedByUser: inactivatedBy,
+  });
+
+  registerAccessAuditEvent(
+    userId,
+    "INACTIVAR_USUARIO",
+    userId,
+    inactivatedBy,
+    {
+      fieldModified: "activeLogical",
+      oldValue: true,
+      newValue: false,
+      origin: "Manual",
+      details: "Usuario desactivado (baja lógica)",
+    }
+  );
+
+  return true;
+}
 
 export async function saveSeedUsers(users: User[]): Promise<void> {
   try {
