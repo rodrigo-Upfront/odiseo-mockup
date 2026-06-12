@@ -39,10 +39,13 @@ export type User = {
   roles?: InternalRoleCode[];
   integralSystemUserId?: string;
   integralSystemUserValue?: string;
+  integralSystemUserName?: string;
   integralSystemUserStatus?: string;
   odiseoUserStatus?: OdiseoUserStatus;
   syncStatus?: SyncStatus;
+  activeLogical?: boolean;
   createdAt: string;
+  updatedAt?: string;
 };
 
 export type UserPublic = Omit<User, "password">;
@@ -265,7 +268,7 @@ export function saveUserRecord(record: User): void {
 }
 
 export function createUser(
-  newUser: Partial<Pick<User, "workerCode" | "position" | "fullName" | "phone" | "areaCode" | "areaLabel" | "profileCode" | "profileLabel" | "roles" | "integralSystemUserId" | "integralSystemUserValue" | "integralSystemUserStatus" | "odiseoUserStatus" | "syncStatus">> &
+  newUser: Partial<Pick<User, "workerCode" | "position" | "fullName" | "phone" | "areaCode" | "areaLabel" | "profileCode" | "profileLabel" | "roles" | "integralSystemUserId" | "integralSystemUserValue" | "integralSystemUserName" | "integralSystemUserStatus" | "odiseoUserStatus" | "syncStatus" | "activeLogical" | "updatedAt">> &
     Omit<
       User,
       | "id"
@@ -282,9 +285,12 @@ export function createUser(
       | "roles"
       | "integralSystemUserId"
       | "integralSystemUserValue"
+      | "integralSystemUserName"
       | "integralSystemUserStatus"
       | "odiseoUserStatus"
       | "syncStatus"
+      | "activeLogical"
+      | "updatedAt"
     >
 ): User {
   const now = new Date().toISOString();
@@ -313,11 +319,14 @@ export function createUser(
     roles: newUser.roles,
     integralSystemUserId: newUser.integralSystemUserId,
     integralSystemUserValue: newUser.integralSystemUserValue,
+    integralSystemUserName: newUser.integralSystemUserName,
     integralSystemUserStatus: newUser.integralSystemUserStatus,
     odiseoUserStatus: newUser.odiseoUserStatus || "PENDIENTE_ACTIVACION",
     syncStatus: newUser.syncStatus || "PENDIENTE_SINCRONIZACION",
+    activeLogical: newUser.activeLogical !== false,
     status: newUser.status || "pending_activation",
     createdAt: now,
+    updatedAt: now,
   };
 
   saveUserRecord(user);
@@ -366,9 +375,12 @@ export function updateUser(
     roles: updates.roles !== undefined ? updates.roles : user.roles,
     integralSystemUserId: updates.integralSystemUserId !== undefined ? updates.integralSystemUserId : user.integralSystemUserId,
     integralSystemUserValue: updates.integralSystemUserValue !== undefined ? updates.integralSystemUserValue : user.integralSystemUserValue,
+    integralSystemUserName: updates.integralSystemUserName !== undefined ? updates.integralSystemUserName : user.integralSystemUserName,
     integralSystemUserStatus: updates.integralSystemUserStatus !== undefined ? updates.integralSystemUserStatus : user.integralSystemUserStatus,
     odiseoUserStatus: updates.odiseoUserStatus !== undefined ? updates.odiseoUserStatus : user.odiseoUserStatus,
     syncStatus: updates.syncStatus !== undefined ? updates.syncStatus : user.syncStatus,
+    activeLogical: updates.activeLogical !== undefined ? updates.activeLogical : user.activeLogical,
+    updatedAt: new Date().toISOString(),
   };
 
   saveUserRecord(updated);

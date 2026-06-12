@@ -44,6 +44,7 @@ interface FormState {
   profileLabel?: string;
   integralSystemUserId: string;
   integralSystemUserValue: string;
+  integralSystemUserName?: string;
   integralSystemUserStatus?: string;
 }
 
@@ -447,9 +448,11 @@ export default function UserCreatePage() {
         roles: profileRoles,
         integralSystemUserId: form.integralSystemUserId,
         integralSystemUserValue: form.integralSystemUserValue,
+        integralSystemUserName: form.integralSystemUserName,
         integralSystemUserStatus: form.integralSystemUserStatus,
         odiseoUserStatus: "PENDIENTE_ACTIVACION",
         syncStatus: "PENDIENTE_SINCRONIZACION",
+        activeLogical: true,
       });
 
       mockSendEmail(
@@ -509,11 +512,12 @@ export default function UserCreatePage() {
         { label: "Nombre completo", value: form.fullName || EMPTY_VALUE },
         { label: "Área", value: form.area || EMPTY_VALUE },
         { label: "Puesto", value: form.position || EMPTY_VALUE },
-        { label: "Perfil", value: selectedProfile?.name || EMPTY_VALUE },
-        { label: "Usuario SI", value: form.integralSystemUserValue || EMPTY_VALUE },
+        { label: "Perfil ODISEO", value: selectedProfile?.name || EMPTY_VALUE },
+        { label: "Código y nombre SI", value: form.integralSystemUserId && form.integralSystemUserValue ? `${form.integralSystemUserId} - ${form.integralSystemUserValue}` : EMPTY_VALUE },
+        { label: "Nombre Usuario SI", value: form.integralSystemUserName || EMPTY_VALUE },
         {
           label: "Estado Usuario SI",
-          value: form.integralSystemUserStatus === "*" ? "Inactivo" : form.integralSystemUserStatus === "" ? "Activo" : "—",
+          value: form.integralSystemUserStatus === "*" ? "Inactivo" : form.integralSystemUserStatus === "" ? "Activo" : EMPTY_VALUE,
         },
         { label: "Estado ODISEO", value: "Pendiente de activación" },
         { label: "Sincronización", value: "Pendiente de sincronización" },
@@ -568,6 +572,7 @@ export default function UserCreatePage() {
                       profileLabel: undefined,
                       integralSystemUserId: "",
                       integralSystemUserValue: "",
+                      integralSystemUserName: undefined,
                       integralSystemUserStatus: undefined,
                     }));
 
@@ -746,6 +751,7 @@ export default function UserCreatePage() {
                         ...form,
                         integralSystemUserId: userId,
                         integralSystemUserValue: userValue,
+                        integralSystemUserName: siUser?.integralSystemUserValue,
                         integralSystemUserStatus: siUser?.integralSystemUserStatus,
                       });
                     }}
@@ -757,10 +763,24 @@ export default function UserCreatePage() {
                     required
                   />
 
+                  <FormInput
+                    label="Código y nombre SI"
+                    value={form.integralSystemUserId && form.integralSystemUserValue ? `${form.integralSystemUserId} - ${form.integralSystemUserValue}` : "—"}
+                    onChange={() => {}}
+                    disabled
+                  />
+
+                  <FormInput
+                    label="Nombre Usuario SI"
+                    value={form.integralSystemUserName || "—"}
+                    onChange={() => {}}
+                    disabled
+                  />
+
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     <FormInput
                       label="Estado Usuario SI"
-                      value={form.integralSystemUserStatus === "*" || form.integralSystemUserStatus === "" ? (form.integralSystemUserStatus === "*" ? "Inactivo" : "Activo") : "—"}
+                      value={form.integralSystemUserStatus === "*" ? "Inactivo" : form.integralSystemUserStatus === "" ? "Activo" : "—"}
                       onChange={() => {}}
                       disabled
                     />
