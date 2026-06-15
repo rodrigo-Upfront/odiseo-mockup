@@ -46,7 +46,7 @@ export default function PasswordRecoveryModal({
     setTimeout(() => {
       const user = getUserByEmail(email);
 
-      if (user && user.odiseoUserStatus !== "BLOQUEADO") {
+      if (user && user.status !== "blocked") {
         const resetRequest = createResetRequest(email, user.id);
 
         // TODO: Integrar envío real de correo cuando el backend/servicio SMTP esté disponible.

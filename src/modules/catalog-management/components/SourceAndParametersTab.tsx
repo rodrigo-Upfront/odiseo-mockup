@@ -162,13 +162,15 @@ export default function SourceAndParametersTab({
               {type === "catalog" ? (
                 <CatalogSearch
                   onSelect={handleCatalogSelect}
-                  selectedCatalog={selectedTarget}
+                  value={selectedTarget}
+                  onChange={onTargetChange}
                   source={catalogSource}
                 />
               ) : (
                 <RestrictionSearch
                   onSelect={handleRestrictionSelect}
-                  selectedRestriction={selectedTarget}
+                  value={selectedTarget}
+                  onChange={onTargetChange}
                 />
               )}
 
