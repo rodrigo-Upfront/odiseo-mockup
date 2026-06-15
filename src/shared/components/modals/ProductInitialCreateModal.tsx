@@ -18,7 +18,7 @@ import { getAllApprovedProducts } from "../../data/approvedProductStorage";
 
 import { UNITS_OF_MEASURE, UNIT_LABELS, UNIT_NORMALIZATION_MAP } from "../../data/unitOfMeasureStorage";
 import { getCatalogOptions } from "../../catalogs";
-import { PRODUCT_CATALOGS } from "../../data/productCatalogs";
+import { PRODUCT_CATALOGS, getModificationOptionsByClassification } from "../../data/productCatalogs";
 import {
   requiresOriginProduct,
   getAllowedOriginLifecycle,
@@ -61,26 +61,6 @@ const getClassificationOptions = () => {
   return catalogValues.map((value: string) => ({ value, label: value }));
 };
 
-// Definición simplificada de MOT_FIELD_RULES para ProductInitialCreateModal
-// (se importaría desde ProductEditPage en una refactorización completa)
-const MOT_FIELD_RULES: Record<string, { mode: "new" | "modified" }> = {
-  "Nueva estructura": { mode: "new" },
-  "Nuevos insumos": { mode: "new" },
-  "Nuevo formato de envasado": { mode: "new" },
-  "Diseño nuevo": { mode: "new" },
-  "Nuevo equipamiento / proceso / temperatura": { mode: "modified" },
-  "Modifica dimensiones": { mode: "modified" },
-  "Modifica propiedades": { mode: "modified" },
-  "Cambia estructura": { mode: "modified" },
-  "Cambia materia prima": { mode: "modified" },
-  "Cambia diseño": { mode: "modified" },
-  "Misma estructura": { mode: "modified" },
-  "Cambia dimensión fuera de tolerancia": { mode: "modified" },
-  "Cambia diseño por variante": { mode: "modified" },
-  "Referencia aprobada sin cambios": { mode: "modified" },
-  "Mismo producto, misma especificación": { mode: "modified" },
-  "Cambio de insumo no homologado": { mode: "modified" },
-};
 
 // Funciones helper para validar clasificación
 const isProductoNuevo = (classification: string): boolean =>
@@ -99,17 +79,13 @@ const normalizeTipoSolicitud = (motivo: string): TipoSolicitud => {
   return motivo as TipoSolicitud;
 };
 
-// Generar opciones de MOT dinámicamente desde MOT_FIELD_RULES
+// Generar opciones de Modificación desde el catálogo centralizado
 const getCausalOptions = (classification: string) => {
   if (isProductoNuevo(classification)) {
-    return Object.keys(MOT_FIELD_RULES)
-      .filter(motKey => MOT_FIELD_RULES[motKey].mode === "new")
-      .map(motKey => ({ value: motKey, label: motKey }));
+    return getModificationOptionsByClassification("Producto Nuevo");
   }
   if (isProductoModificado(classification)) {
-    return Object.keys(MOT_FIELD_RULES)
-      .filter(motKey => MOT_FIELD_RULES[motKey].mode === "modified")
-      .map(motKey => ({ value: motKey, label: motKey }));
+    return getModificationOptionsByClassification("Producto Modificado");
   }
   return [];
 };

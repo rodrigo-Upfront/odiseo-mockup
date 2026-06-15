@@ -3,6 +3,14 @@
 
 export type ProductCatalogKey = keyof typeof PRODUCT_CATALOGS;
 
+export type ProductModificationCatalogItem = {
+  code: string;
+  label: string;
+  classification: string;
+  active: boolean;
+  sortOrder: number;
+};
+
 export const PRODUCT_CATALOGS = {
   aplicacionTecnica: {
     label: "Aplicación Técnica",
@@ -423,7 +431,7 @@ export const PRODUCT_CATALOGS = {
       "Nueva estructura",
       "Nuevos insumos",
       "Nuevo formato de envasado",
-      "Diseño nuevo",
+      "Nuevo diseño",
     ],
   },
   modificacionProductoModificado: {
@@ -452,7 +460,7 @@ export const PRODUCT_CATALOGS = {
       "Nueva estructura",
       "Nuevos insumos",
       "Nuevo formato de envasado",
-      "Diseño nuevo",
+      "Nuevo diseño",
       "Nuevo equipamiento / proceso / temperatura",
       "Modifica dimensiones",
       "Modifica propiedades",
@@ -1251,6 +1259,167 @@ export const PRODUCT_CATALOGS = {
     ],
   },
 } as const;
+
+// Catálogo centralizado de opciones de Modificación por Clasificación
+export const PRODUCT_MODIFICATION_CATALOG: ProductModificationCatalogItem[] = [
+  // Producto Nuevo
+  {
+    code: "MOD-PN-001",
+    label: "Nueva estructura",
+    classification: "Producto Nuevo",
+    active: true,
+    sortOrder: 1,
+  },
+  {
+    code: "MOD-PN-002",
+    label: "Nuevos insumos",
+    classification: "Producto Nuevo",
+    active: true,
+    sortOrder: 2,
+  },
+  {
+    code: "MOD-PN-003",
+    label: "Nuevo formato de envasado",
+    classification: "Producto Nuevo",
+    active: true,
+    sortOrder: 3,
+  },
+  {
+    code: "MOD-PN-004",
+    label: "Nuevo diseño",
+    classification: "Producto Nuevo",
+    active: true,
+    sortOrder: 4,
+  },
+  {
+    code: "MOD-PN-005",
+    label: "Nuevo equipamiento / proceso / temperatura",
+    classification: "Producto Nuevo",
+    active: true,
+    sortOrder: 5,
+  },
+  {
+    code: "MOD-PN-006",
+    label: "Extensión de línea",
+    classification: "Producto Nuevo",
+    active: true,
+    sortOrder: 6,
+  },
+  // Producto Modificado
+  {
+    code: "MOD-PM-001",
+    label: "Modifica dimensiones",
+    classification: "Producto Modificado",
+    active: true,
+    sortOrder: 1,
+  },
+  {
+    code: "MOD-PM-002",
+    label: "Modifica propiedades",
+    classification: "Producto Modificado",
+    active: true,
+    sortOrder: 2,
+  },
+  {
+    code: "MOD-PM-003",
+    label: "Cambia estructura",
+    classification: "Producto Modificado",
+    active: true,
+    sortOrder: 3,
+  },
+  {
+    code: "MOD-PM-004",
+    label: "Cambia materia prima",
+    classification: "Producto Modificado",
+    active: true,
+    sortOrder: 4,
+  },
+  {
+    code: "MOD-PM-005",
+    label: "Cambia diseño",
+    classification: "Producto Modificado",
+    active: true,
+    sortOrder: 5,
+  },
+  {
+    code: "MOD-PM-006",
+    label: "Misma estructura",
+    classification: "Producto Modificado",
+    active: true,
+    sortOrder: 6,
+  },
+  {
+    code: "MOD-PM-007",
+    label: "Cambia dimensión fuera de tolerancia",
+    classification: "Producto Modificado",
+    active: true,
+    sortOrder: 7,
+  },
+  {
+    code: "MOD-PM-008",
+    label: "Cambia diseño por variante",
+    classification: "Producto Modificado",
+    active: true,
+    sortOrder: 8,
+  },
+  {
+    code: "MOD-PM-009",
+    label: "Referencia aprobada sin cambios",
+    classification: "Producto Modificado",
+    active: true,
+    sortOrder: 9,
+  },
+  {
+    code: "MOD-PM-010",
+    label: "Mismo producto, misma especificación",
+    classification: "Producto Modificado",
+    active: true,
+    sortOrder: 10,
+  },
+  {
+    code: "MOD-PM-011",
+    label: "Cambio de insumo no homologado",
+    classification: "Producto Modificado",
+    active: true,
+    sortOrder: 11,
+  },
+];
+
+// Helper para obtener opciones de modificación por clasificación
+export const getModificationOptionsByClassification = (
+  classification: string
+): Array<{ value: string; label: string }> => {
+  const normalizedClassification = classification
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+
+  return PRODUCT_MODIFICATION_CATALOG
+    .filter((item) => {
+      const itemClassification = item.classification
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, " ");
+
+      return (
+        item.active &&
+        (itemClassification === normalizedClassification ||
+          (normalizedClassification === "producto nuevo" &&
+            itemClassification === "producto nuevo") ||
+          (normalizedClassification === "nuevo" &&
+            itemClassification === "producto nuevo") ||
+          (normalizedClassification === "producto modificado" &&
+            itemClassification === "producto modificado") ||
+          (normalizedClassification === "modificado" &&
+            itemClassification === "producto modificado"))
+      );
+    })
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((item) => ({
+      value: item.label,
+      label: item.label,
+    }));
+};
 
 export const PRODUCT_FIELD_CATALOG_MAP: Record<
   string,
