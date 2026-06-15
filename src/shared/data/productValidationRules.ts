@@ -73,7 +73,7 @@ function resolveBaseRoute(
   product: ProductPreliminaryRecord
 ): ValidationRoute {
   if (reason === "Producto nuevo") {
-    if (causal === "Diseño nuevo") {
+    if (causal === "Nuevo diseño") {
       return hasReference ? "AG" : "AG_RD_DESARROLLO";
     }
 

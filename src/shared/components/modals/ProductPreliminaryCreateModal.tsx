@@ -153,7 +153,7 @@ function resolveInitialValidationRoute(
       route = "RD_DESARROLLO";
     }
 
-    if (causal === "Diseño nuevo") {
+    if (causal === "Nuevo diseño") {
       route = "AG";
     }
   }

@@ -28,7 +28,7 @@ export const CAUSAL_RULES: Record<ProductRequestReason, ProductCausal[]> = {
     "Nueva estructura",
     "Nuevos insumos",
     "Nuevo formato de envasado",
-    "Diseño nuevo",
+    "Nuevo diseño",
   ],
 
   "Producto modificado": [
@@ -94,7 +94,7 @@ const CAUSALS_REQUIRING_REFERENCE: ProductCausal[] = [
   // Producto nuevo con referencia técnica deseable/obligatoria
   "Nuevos insumos",
   "Nuevo formato de envasado",
-  "Diseño nuevo",
+  "Nuevo diseño",
 
   // Producto modificado siempre parte de una referencia existente
   "Nuevo equipamiento / proceso / temperatura",
@@ -198,7 +198,7 @@ export function getCausalHelpText(
     case "Nuevo formato de envasado":
       return "Aplica cuando se mantiene la estructura técnica, pero cambia la presentación física del empaque: formato, ancho, largo, fuelle, configuración o accesorios.";
 
-    case "Diseño nuevo":
+    case "Nuevo diseño":
       return "Aplica cuando se mantiene estructura, materiales, capas, dimensiones críticas, accesorios y propiedades. Solo cambia el diseño gráfico.";
 
     case "Nuevo equipamiento / proceso / temperatura":
@@ -262,7 +262,7 @@ export function getCausalResultText(
     case "Nuevo formato de envasado":
       return "Nuevo SKU sugerido.";
 
-    case "Diseño nuevo":
+    case "Nuevo diseño":
       return "Nuevo SKU sugerido.";
 
     case "Nuevo equipamiento / proceso / temperatura":

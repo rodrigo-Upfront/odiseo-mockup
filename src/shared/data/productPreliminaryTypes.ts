@@ -27,7 +27,7 @@ export type ProductCausal =
   | "Nueva estructura"
   | "Nuevos insumos"
   | "Nuevo formato de envasado"
-  | "Diseño nuevo"
+  | "Nuevo diseño"
   | "Nuevo equipamiento / proceso / temperatura"
   | "Modifica dimensiones"
   | "Modifica propiedades"

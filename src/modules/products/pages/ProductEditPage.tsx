@@ -366,7 +366,7 @@ const MOT_FIELD_RULES: Record<string, {
     lockedFieldGroups: [],
     requiresBaseProductAutofill: false
   },
-  "Diseño nuevo": {
+  "Nuevo diseño": {
     mode: "new",
     enabledSections: ["producto", "diseno", "estructura", "dimensiones", "embalaje"],
     editableFieldGroups: ["design", "printing", "edag", "photoregister", "rewinding", "photocell", "designPlans"],
@@ -1231,7 +1231,7 @@ const isProductoModificado = (classification: string): boolean =>
   classification === "Producto Modificado" || classification === "Modificado";
 
 const isDisenoNuevo = (classification: string, projectType: string): boolean =>
-  isProductoNuevo(classification) && projectType === "Diseño nuevo";
+  isProductoNuevo(classification) && projectType === "Nuevo diseño";
 
 const isCambioDiseno = (classification: string, projectType: string): boolean =>
   isProductoModificado(classification) && projectType === "Cambia diseño";
@@ -4927,7 +4927,7 @@ if (!project) {
               <div className="space-y-5">
                 {isDisenoNuevo(form.classification, form.projectType) && (
                   <div className="rounded-xl border border-purple-200 bg-purple-50 p-4 text-sm text-purple-800">
-                    <p className="font-bold">Diseño nuevo</p>
+                    <p className="font-bold">Nuevo diseño</p>
                     <p className="mt-1 text-xs">
                       Este producto no tiene EDAG de referencia. La información de diseño será
                       completada y validada por Artes Gráficas en el Momento 2.
