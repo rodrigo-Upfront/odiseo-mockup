@@ -121,6 +121,8 @@ export function createClient(data: {
     ruc: data.ruc,
     industry: data.industry,
     status: data.status || "Por aprobar",
+    activeLogical: "1",
+    clientApprovalStatus: "P",
     siClientId: data.siClientId,
     siClientCode: data.siClientCode,
     createdAt: new Date().toISOString(),
