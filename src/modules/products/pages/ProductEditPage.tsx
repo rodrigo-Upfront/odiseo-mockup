@@ -4855,6 +4855,18 @@ if (!project) {
                     />
                   </div>
 
+                  {/* ========== ACCIÓN SALESFORCE ========== */}
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2 mt-4">
+                    <FormInput
+                      label="Acción Salesforce"
+                      value={form.salesforceAction}
+                      onChange={(value) => updateField("salesforceAction", normalizeSalesforceAction(value))}
+                      onBlur={() => markFieldAsTouched("salesforceAction")}
+                      error={getError("salesforceAction")}
+                      placeholder="Ej. A-123456"
+                    />
+                  </div>
+
                   {/* ========== DESCRIPCIÓN BREVE ========== */}
                   <div className="space-y-1 mt-4">
                     <label className="block text-xs font-bold uppercase tracking-wide text-slate-600">
@@ -6533,6 +6545,11 @@ if (!project) {
                       ? `${form.estimatedVolume} ${form.unitOfMeasure || ""}`
                       : "—"
                   }
+                />
+
+                <PreviewRow
+                  label="Acción Salesforce"
+                  value={form.salesforceAction || "—"}
                 />
 
                 {form.printClass && (

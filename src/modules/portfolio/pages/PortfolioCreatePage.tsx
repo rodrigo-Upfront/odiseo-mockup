@@ -267,7 +267,14 @@ export default function PortfolioCreatePage() {
   const selectedStatus = getStatusById(form.estadoId);
 
   const allClients = useMemo(() => getClientCatalogRecords(), [dataReloaded]);
-  const eligibleClients = useMemo(() => allClients.filter((c) => canClientHavePortfolio(c.status)), [allClients]);
+  const eligibleClients = useMemo(() =>
+    allClients.filter((c) =>
+      canClientHavePortfolio(c.status) &&
+      c.activeLogical === "1" &&
+      c.clientApprovalStatus === "A"
+    ),
+    [allClients]
+  );
   const selectedClient = useMemo(() => allClients.find((c) => c.id === form.clienteId), [allClients, form.clienteId]);
 
   const comercialUsers = useMemo(() => getActiveExecutiveRecords(), [dataReloaded]);
@@ -761,7 +768,7 @@ useEffect(() => {
                 ) : isClientInherited ? (
                   <div>
                     <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">
-                      Nombre del Cliente *
+                      Nombre de Cliente *
                     </span>
                     <div className="w-full rounded-lg border border-green-200 bg-green-50 py-2 px-3 text-sm font-semibold text-green-800">
                       {selectedClient?.businessName || "—"}
@@ -772,7 +779,7 @@ useEffect(() => {
                   </div>
                 ) : (
                   <ClientSearch
-                    label="Nombre del Cliente *"
+                    label="Nombre de Cliente *"
                     value={form.clienteId}
                     clients={eligibleClients}
                     onChange={(value) => updateRequiredField("clienteId", value)}

@@ -12,6 +12,8 @@ export type Client = {
   ruc: string;
   industry: string;
   status: ClientStatus;
+  activeLogical: "1" | "0";
+  clientApprovalStatus?: "A" | "P" | "*";
   siClientId?: string;
   siClientCode?: string;
   createdAt: string;
@@ -33,8 +35,23 @@ function persistClients(records: Client[]) {
   localStorage.setItem(CLIENTS_STORAGE_KEY, JSON.stringify(records));
 }
 
+export function resetClientsData(): void {
+  localStorage.removeItem(CLIENTS_STORAGE_KEY);
+}
+
 export function getAllClients(): Client[] {
   const saved = safeParseArray<Client>(localStorage.getItem(CLIENTS_STORAGE_KEY));
+
+  // Si los datos guardados son antiguos (sin los campos nuevos), resetear localStorage
+  const hasNewFields = saved.length === 0 || saved.every((c: any) =>
+    c.hasOwnProperty('clientApprovalStatus') && c.hasOwnProperty('activeLogical')
+  );
+
+  if (saved.length > 0 && !hasNewFields) {
+    localStorage.removeItem(CLIENTS_STORAGE_KEY);
+    return INITIAL_CLIENTS;
+  }
+
   const savedIds = new Set(saved.map((c) => c.id));
   const initialWithoutDuplicates = INITIAL_CLIENTS.filter(
     (client) => !savedIds.has(client.id)

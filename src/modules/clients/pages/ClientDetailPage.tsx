@@ -5,8 +5,6 @@ import { useLayout } from "../../../components/layout/LayoutContext";
 import { getCurrentUser } from "../../../shared/data/userStorage";
 import {
   getClientByCode,
-  STATUS_LABELS,
-  type ClientStatus,
   canClientHavePortfolio,
   getClientPortfolioEligibilityMessage,
 } from "../../../shared/data/clientStorage";
@@ -21,6 +19,20 @@ const getText = (...values: any[]) => {
   );
 
   return value ? String(value) : "—";
+};
+
+const getDisplayStatus = (client: any): string => {
+  if (client.activeLogical === "0") {
+    return "Inactivo";
+  }
+  if (client.clientApprovalStatus === "A") {
+    return "Aprobado";
+  }
+  return "Pendiente";
+};
+
+const getOdiseoStatus = (client: any): string => {
+  return getDisplayStatus(client) === "Inactivo" ? "Inactivo" : "Activo";
 };
 
 export default function ClientDetailPage() {
@@ -79,21 +91,7 @@ export default function ClientDetailPage() {
   const clientName = getText(client.razonSocial, client.businessName, client.nombre, client.name);
   const clientRuc = getText(client.ruc, client.RUC);
   const clientEmail = getText(client.email, client.correo);
-  const clientPhone = getText(client.telefono, client.phone);
-  const clientContact = getText(client.contacto, client.contactName);
   const clientIndustry = getText(client.rubro, client.industry, client.segmento);
-  
-  // Custom badges for Client Status similar to Portfolio Status
-  const getBadgeStyle = (status: string) => {
-    if (status === "Activo") return "border-green-200 bg-green-50 text-green-700";
-    if (status === "Inactivo") return "border-slate-300 bg-slate-50 text-slate-700";
-    if (status === "Aprobado") return "border-blue-200 bg-blue-50 text-blue-700";
-    if (status === "Por aprobar") return "border-amber-200 bg-amber-50 text-amber-700";
-    if (status === "Anulado") return "border-red-200 bg-red-50 text-red-700";
-    return "border-slate-200 bg-slate-50 text-slate-700";
-  };
-
-  const statusLabel = STATUS_LABELS[client.status as ClientStatus] || client.status;
 
 
   return (
@@ -109,14 +107,9 @@ export default function ClientDetailPage() {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="p-6 bg-gradient-to-br from-brand-primary to-brand-secondary text-white">
-          <div className="flex justify-between items-start">
-            <div>
-              <h2 className="text-2xl font-bold">{clientName}</h2>
-              <p className="text-sm opacity-80 mt-1">Código: {clientCodeValue}</p>
-            </div>
-            <span className={`rounded-full border px-3 py-1 text-xs font-bold ${getBadgeStyle(client.status)}`}>
-              {statusLabel}
-            </span>
+          <div>
+            <h2 className="text-2xl font-bold">{clientName}</h2>
+            <p className="text-sm opacity-80 mt-1">Código: {clientCodeValue}</p>
           </div>
         </div>
       </div>
@@ -126,22 +119,21 @@ export default function ClientDetailPage() {
           <div className="space-y-4">
             <PreviewRow label="Código de cliente" value={clientCodeValue} />
             <PreviewRow label="Nombre de cliente" value={clientName} />
+            <PreviewRow label="Correo de Empresa" value={clientEmail} />
             <PreviewRow label="Número de RUC" value={clientRuc} />
             <PreviewRow label="Sector" value={clientIndustry} />
-            <PreviewRow label="Correo de Empresa" value={clientEmail} />
-            <PreviewRow label="Teléfono" value={clientPhone} />
-            <PreviewRow label="Contacto principal" value={clientContact} />
-            <PreviewRow label="Fecha de registro" value={client.createdAt ? new Date(client.createdAt).toLocaleDateString() : "—"} />
           </div>
         </FormCard>
 
         <FormCard title="Datos de sistema" icon="◇" color="#00A1DE">
           <div className="space-y-4">
-            <PreviewRow label="Estado ODISEO" value={statusLabel} />
-            <PreviewRow label="Código SI" value={getText(client.siClientCode, "—")} />
-            <PreviewRow label="Estado SI" value={client.siClientId ? "Vinculado" : "No vinculado"} />
+            <PreviewRow label="Activo logico" value={getOdiseoStatus(client)} />
+            <PreviewRow
+              label="Estado de Cliente"
+              value={getDisplayStatus(client)}
+            />
+            <PreviewRow label="Fecha de registro" value={client.createdAt ? new Date(client.createdAt).toLocaleDateString() : "—"} />
             <PreviewRow label="Última actualización" value={client.updatedAt ? new Date(client.updatedAt).toLocaleDateString() : "—"} />
-            <PreviewRow label="Realizado por" value={client.updatedBy || "Sistema"} />
             {client.origin && (
               <PreviewRow label="Origen de registro" value={getText(client.origin, client.createdBy)} />
             )}

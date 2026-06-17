@@ -7,7 +7,6 @@ import {
   Mail,
   RotateCcw,
   Search,
-  UserX,
   Users,
   ShieldCheck,
 } from "lucide-react";
@@ -17,14 +16,12 @@ import {
   getAllClients,
   type Client,
   type ClientStatus,
-  STATUS_LABELS,
-  STATUS_COLORS,
 } from "../../../shared/data/clientStorage";
 
 import ActionButton from "../../../shared/components/buttons/ActionButton";
 import { tableStyles } from "../../../shared/ui/tableStyles";
 
-type ClientTab = "all" | ClientStatus;
+type ClientTab = "all" | "Aprobado" | "Pendiente" | "Inactivo";
 type SortDirection = "asc" | "desc";
 type SortKey = "code" | "businessName" | "email" | "ruc" | "industry" | "status" | "createdAt";
 
@@ -41,6 +38,29 @@ const getClientStatus = (client: Client): ClientStatus => {
   return client.status;
 };
 
+const getDisplayStatus = (client: Client): string => {
+  if (client.activeLogical === "0") {
+    return "Inactivo";
+  }
+  if (client.clientApprovalStatus === "A") {
+    return "Aprobado";
+  }
+  return "Pendiente";
+};
+
+const getStatusBadgeClass = (status: string): string => {
+  switch (status) {
+    case "Aprobado":
+      return "border-green-200 bg-green-50 text-green-700";
+    case "Pendiente":
+      return "border-amber-200 bg-amber-50 text-amber-700";
+    case "Inactivo":
+      return "border-slate-300 bg-slate-50 text-slate-700";
+    default:
+      return "border-slate-200 bg-slate-50 text-slate-700";
+  }
+};
+
 const getSortValue = (client: Client, key: SortKey): string | number => {
   switch (key) {
     case "code": return getText(client.code).toLowerCase();
@@ -48,7 +68,7 @@ const getSortValue = (client: Client, key: SortKey): string | number => {
     case "email": return getText(client.email).toLowerCase();
     case "ruc": return getText(client.ruc).toLowerCase();
     case "industry": return getText(client.industry).toLowerCase();
-    case "status": return STATUS_LABELS[getClientStatus(client)].toLowerCase();
+    case "status": return getDisplayStatus(client).toLowerCase();
     case "createdAt": {
       const createdAt = client.createdAt;
       const time = createdAt ? new Date(createdAt).getTime() : 0;
@@ -106,28 +126,18 @@ export default function ClientListPage() {
 
   const clients = useMemo(() => getAllClients(), []);
 
-  const activeClients = useMemo(
-    () => clients.filter((client) => getClientStatus(client) === "Activo"),
+  const approvedClients = useMemo(
+    () => clients.filter((client) => getDisplayStatus(client) === "Aprobado"),
+    [clients],
+  );
+
+  const pendingClients = useMemo(
+    () => clients.filter((client) => getDisplayStatus(client) === "Pendiente"),
     [clients],
   );
 
   const inactiveClients = useMemo(
-    () => clients.filter((client) => getClientStatus(client) === "Inactivo"),
-    [clients],
-  );
-
-  const approvedClients = useMemo(
-    () => clients.filter((client) => getClientStatus(client) === "Aprobado"),
-    [clients],
-  );
-
-  const unapprovedClients = useMemo(
-    () => clients.filter((client) => getClientStatus(client) === "Por aprobar"),
-    [clients],
-  );
-
-  const cancelledClients = useMemo(
-    () => clients.filter((client) => getClientStatus(client) === "Anulado"),
+    () => clients.filter((client) => getDisplayStatus(client) === "Inactivo"),
     [clients],
   );
 
@@ -139,17 +149,16 @@ export default function ClientListPage() {
   const filteredClients = useMemo(() => {
     const search = query.trim().toLowerCase();
     const filtered = clients.filter((client) => {
-      const clientStatus = getClientStatus(client);
-      const statusLabel = STATUS_LABELS[clientStatus];
+      const displayStatus = getDisplayStatus(client);
       const searchableText = [
-        client.code, client.email, client.businessName, client.ruc, client.industry, statusLabel, client.createdAt,
+        client.code, client.email, client.businessName, client.ruc, client.industry, displayStatus, client.createdAt,
       ]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
 
       const matchesSearch = !search || searchableText.includes(search);
-      const matchesTab = activeTab === "all" || clientStatus === activeTab;
+      const matchesTab = activeTab === "all" || displayStatus === activeTab;
       const matchesIndustry = !industryFilter || client.industry === industryFilter;
 
       return matchesSearch && matchesTab && matchesIndustry;
@@ -247,11 +256,9 @@ export default function ClientListPage() {
 
   const tabs = [
     { key: "all" as ClientTab, label: "Todos", count: clients.length },
-    { key: "Activo" as ClientTab, label: "Activos", count: activeClients.length },
-    { key: "Inactivo" as ClientTab, label: "Inactivos", count: inactiveClients.length },
     { key: "Aprobado" as ClientTab, label: "Aprobados", count: approvedClients.length },
-    { key: "Por aprobar" as ClientTab, label: "Por aprobar", count: unapprovedClients.length },
-    { key: "Anulado" as ClientTab, label: "Anulados", count: cancelledClients.length },
+    { key: "Pendiente" as ClientTab, label: "Pendiente", count: pendingClients.length },
+    { key: "Inactivo" as ClientTab, label: "Inactivos", count: inactiveClients.length },
   ];
 
   const startRecord = totalRecords === 0 ? 0 : (currentPage - 1) * pageSize + 1;
@@ -259,7 +266,7 @@ export default function ClientListPage() {
 
   return (
     <div className="w-full max-w-none bg-[#f6f8fb]">
-      <section className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <section className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1"><p className="text-xs font-bold uppercase tracking-wide text-slate-500">Total</p><p className="mt-2 text-2xl font-extrabold text-slate-900">{clients.length}</p></div>
@@ -268,32 +275,20 @@ export default function ClientListPage() {
         </div>
         <div className="rounded-2xl border border-green-100 bg-white p-4 shadow-sm">
           <div className="flex items-start justify-between gap-3">
-            <div className="flex-1"><p className="text-xs font-bold uppercase tracking-wide text-green-600">Activos</p><p className="mt-2 text-2xl font-extrabold text-slate-900">{activeClients.length}</p></div>
-            <div className="rounded-lg bg-green-50 p-2 text-green-600"><Users size={18} /></div>
+            <div className="flex-1"><p className="text-xs font-bold uppercase tracking-wide text-green-600">Aprobados</p><p className="mt-2 text-2xl font-extrabold text-slate-900">{approvedClients.length}</p></div>
+            <div className="rounded-lg bg-green-50 p-2 text-green-600"><ShieldCheck size={18} /></div>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-amber-100 bg-white p-4 shadow-sm">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1"><p className="text-xs font-bold uppercase tracking-wide text-amber-600">Pendiente</p><p className="mt-2 text-2xl font-extrabold text-slate-900">{pendingClients.length}</p></div>
+            <div className="rounded-lg bg-amber-50 p-2 text-amber-600"><Mail size={18} /></div>
           </div>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1"><p className="text-xs font-bold uppercase tracking-wide text-slate-600">Inactivos</p><p className="mt-2 text-2xl font-extrabold text-slate-900">{inactiveClients.length}</p></div>
             <div className="rounded-lg bg-slate-100 p-2 text-slate-600"><Users size={18} /></div>
-          </div>
-        </div>
-        <div className="rounded-2xl border border-blue-100 bg-white p-4 shadow-sm">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1"><p className="text-xs font-bold uppercase tracking-wide text-blue-600">Aprobados</p><p className="mt-2 text-2xl font-extrabold text-slate-900">{approvedClients.length}</p></div>
-            <div className="rounded-lg bg-blue-50 p-2 text-blue-600"><ShieldCheck size={18} /></div>
-          </div>
-        </div>
-        <div className="rounded-2xl border border-amber-100 bg-white p-4 shadow-sm">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1"><p className="text-xs font-bold uppercase tracking-wide text-amber-600">Por aprobar</p><p className="mt-2 text-2xl font-extrabold text-slate-900">{unapprovedClients.length}</p></div>
-            <div className="rounded-lg bg-amber-50 p-2 text-amber-600"><Mail size={18} /></div>
-          </div>
-        </div>
-        <div className="rounded-2xl border border-red-100 bg-white p-4 shadow-sm">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1"><p className="text-xs font-bold uppercase tracking-wide text-red-600">Anulados</p><p className="mt-2 text-2xl font-extrabold text-slate-900">{cancelledClients.length}</p></div>
-            <div className="rounded-lg bg-red-50 p-2 text-red-600"><UserX size={18} /></div>
           </div>
         </div>
       </section>
@@ -332,7 +327,7 @@ export default function ClientListPage() {
             </div>
           </div>
 
-          <div><label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">Rubro</label>
+          <div><label className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-slate-500">Sector</label>
             <select value={industryFilter} onChange={(event) => setIndustryFilter(event.target.value)}
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm transition-colors focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary">
               <option value="">Todos los rubros</option>
@@ -351,12 +346,12 @@ export default function ClientListPage() {
           <table className={tableStyles.table}>
             <thead>
               <tr className={tableStyles.headerRow}>
-                <SortableHeader label="Código" sortKey="code" />
-                <SortableHeader label="Razón Social" sortKey="businessName" />
-                <SortableHeader label="Email" sortKey="email" />
-                <SortableHeader label="RUC" sortKey="ruc" />
-                <SortableHeader label="Rubro" sortKey="industry" />
-                <SortableHeader label="Estado" sortKey="status" />
+                <SortableHeader label="Código de cliente" sortKey="code" />
+                <SortableHeader label="Nombre de cliente" sortKey="businessName" />
+                <SortableHeader label="Correo de Empresa" sortKey="email" />
+                <SortableHeader label="Número de RUC" sortKey="ruc" />
+                <SortableHeader label="Sector" sortKey="industry" />
+                <SortableHeader label="Estado de cliente" sortKey="status" />
                 <th className={tableStyles.headerCellRight}>Acciones</th>
               </tr>
             </thead>
@@ -383,8 +378,8 @@ export default function ClientListPage() {
                     <td className="px-4 py-3 text-sm text-slate-600">{client.ruc || "�"}</td>
                     <td className="px-4 py-3 text-sm text-slate-600">{client.industry || "�"}</td>
                     <td className={tableStyles.cell}>
-                      <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${STATUS_COLORS[client.status]}`}>
-                        {STATUS_LABELS[client.status]}
+                      <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${getStatusBadgeClass(getDisplayStatus(client))}`}>
+                        {getDisplayStatus(client)}
                       </span>
                     </td>
                     <td className={tableStyles.actions}>
