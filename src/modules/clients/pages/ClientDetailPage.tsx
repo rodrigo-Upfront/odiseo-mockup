@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 import { useLayout } from "../../../components/layout/LayoutContext";
 import { getCurrentUser } from "../../../shared/data/userStorage";
 import {
   getClientByCode,
   canClientHavePortfolio,
   getClientPortfolioEligibilityMessage,
+  updateClient,
 } from "../../../shared/data/clientStorage";
 import { getPortfoliosByClient, type PortfolioRecord } from "../../../shared/data/portfolioStorage";
+import Button from "../../../shared/components/ui/Button";
 import PreviewRow from "../../../shared/components/display/PreviewRow";
 import FormCard from "../../../shared/components/forms/FormCard";
 import RowActionButtons from "../../../shared/components/table/RowActionButtons";
@@ -42,6 +44,7 @@ export default function ClientDetailPage() {
 
   const [client, setClient] = useState<any>(null);
   const [portfolios, setPortfolios] = useState<PortfolioRecord[]>([]);
+  const [showStatusModal, setShowStatusModal] = useState(false);
 
   useEffect(() => {
     if (clientCode) {
@@ -52,6 +55,7 @@ export default function ClientDetailPage() {
 
         const currentUser = getCurrentUser();
         const isAdmin = currentUser?.role === "administrator";
+        const isClientInactive = clientData.activeLogical === "0";
 
         setHeader({
           title: "Detalle de Cliente",
@@ -61,12 +65,21 @@ export default function ClientDetailPage() {
             { label: "Ver" },
           ],
           actions: isAdmin ? (
-            <button
-              onClick={() => navigate(`/clients/${clientData.code}/edit`)}
-              className="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-4 py-2 text-sm font-bold text-white hover:bg-brand-primary-hover"
-            >
-              Editar Cliente
-            </button>
+            <div className="flex gap-2">
+              <Button
+                variant={isClientInactive ? "primary" : "outline"}
+                onClick={() => setShowStatusModal(true)}
+              >
+                {isClientInactive ? "Activar Cliente" : "Inactivar Cliente"}
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/clients/${clientData.code}/edit`)}
+              >
+                Editar Cliente
+              </Button>
+            </div>
           ) : undefined,
         });
       }
@@ -75,6 +88,28 @@ export default function ClientDetailPage() {
     return () => resetHeader();
   }, [clientCode, setHeader, resetHeader, navigate]);
 
+  const handleToggleClientStatus = () => {
+    if (!client) return;
+
+    const isCurrentlyInactive = client.activeLogical === "0";
+    const now = new Date().toISOString();
+    updateClient(client.id, {
+      activeLogical: isCurrentlyInactive ? "1" : "0",
+      updatedAt: now,
+    });
+
+    setClient((prev: any) =>
+      prev
+        ? {
+            ...prev,
+            activeLogical: isCurrentlyInactive ? "1" : "0",
+            updatedAt: now,
+          }
+        : prev
+    );
+
+    setShowStatusModal(false);
+  };
 
   if (!client) {
     return (
@@ -214,6 +249,47 @@ export default function ClientDetailPage() {
           </tbody>
         </table>
       </div>
+
+      {showStatusModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="mx-4 max-w-sm rounded-xl bg-white p-6 shadow-lg">
+            <div className="mb-4 flex items-start justify-between">
+              <h3 className="text-lg font-bold text-slate-900">
+                {client.activeLogical === "0"
+                  ? "¿Activar cliente?"
+                  : "¿Inactivar cliente?"}
+              </h3>
+
+              <button
+                type="button"
+                onClick={() => setShowStatusModal(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <p className="mb-6 text-sm text-slate-600">
+              {client.activeLogical === "0"
+                ? "Este cliente volverá a estar disponible para crear portafolios."
+                : "Este cliente dejará de estar disponible para crear nuevos portafolios. Los portafolios ya asociados se mantendrán para consulta y seguimiento."}
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowStatusModal(false)}>
+                Cancelar
+              </Button>
+
+              <Button
+                variant={client.activeLogical === "0" ? "primary" : "danger"}
+                onClick={handleToggleClientStatus}
+              >
+                {client.activeLogical === "0" ? "Activar" : "Inactivar"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
