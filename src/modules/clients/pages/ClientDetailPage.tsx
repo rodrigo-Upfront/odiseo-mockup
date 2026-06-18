@@ -65,21 +65,12 @@ export default function ClientDetailPage() {
             { label: "Ver" },
           ],
           actions: isAdmin ? (
-            <div className="flex gap-2">
-              <Button
-                variant={isClientInactive ? "primary" : "outline"}
-                onClick={() => setShowStatusModal(true)}
-              >
-                {isClientInactive ? "Activar Cliente" : "Inactivar Cliente"}
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={() => navigate(`/clients/${clientData.code}/edit`)}
-              >
-                Editar Cliente
-              </Button>
-            </div>
+            <Button
+              variant={isClientInactive ? "primary" : "outline"}
+              onClick={() => setShowStatusModal(true)}
+            >
+              {isClientInactive ? "Activar Cliente" : "Inactivar Cliente"}
+            </Button>
           ) : undefined,
         });
       }
