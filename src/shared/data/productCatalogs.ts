@@ -1464,3 +1464,40 @@ export const PRODUCT_FIELD_CATALOG_MAP: Record<
   "P2:Corte aliviador": "PENDING_DEFINITION",
   "P2:Dispensador": "PENDING_DEFINITION",
 };
+
+// Mapeo de máquinas agrupadas por tipo de envoltura
+export const MACHINES_BY_WRAPPING: Record<string, string[]> = {
+  POUCH: [
+    "VFFS - 3 sellos Pillow Pack",
+    "VFFS - 3 sellos con Fuelle Lateral",
+    "VFFS - 4 sellos con Mordaza Recta",
+    "VFFS - 4 sellos con Mordaza Giratoria",
+    "HFFS - Pouch 4 sellos",
+    "HFFS - Stand up Pouch - Base cuadrada",
+    "HFFS - Stand up Pouch - Sello en K",
+    "HFFS - Stand up Pouch - Sello Doy Pack",
+  ],
+  BOLSA: [
+    "HFFS - Sobre Plano 4 sellos",
+    "Wicket",
+    "Wicket con Agregados",
+  ],
+  LAMINA: [
+    "HFFS - Flow Pack",
+    "Twist Wrap",
+    "Envolvedora",
+  ],
+  ETIQUETA: [
+    "Etiquetadora Automática - Roll Fed",
+  ],
+  GENERAL: [
+    "Túnel de Termoenogimiento - TC Cortina (2 Bobinas)",
+    "Túnel de Termoenogimiento - TC Flujo continuo",
+    "Manual",
+  ],
+};
+
+// Función para obtener máquinas por tipo de envoltura
+export const getMachinesByWrapping = (wrappingType: string): string[] => {
+  return MACHINES_BY_WRAPPING[wrappingType] || [];
+};
