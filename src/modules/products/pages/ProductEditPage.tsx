@@ -38,6 +38,11 @@ import {
 import { getCatalogOptions } from "../../../shared/catalogs";
 import { PRODUCT_CATALOGS } from "../../../shared/data/productCatalogs";
 import {
+  getActiveProductClassificationOptions,
+  getActiveModificationOptionsByClassification,
+  normalizeProductClassificationToCatalog,
+} from "../../../shared/data/productModificationCatalog";
+import {
   getDimensionRestrictionsByFormat,
   formatDimensionRange,
   isDimensionValueInRange,
@@ -899,22 +904,11 @@ function shouldFieldBeDisabled(
   return false;
 }
 
-// Generar opciones de MOT dinámicamente desde MOT_FIELD_RULES
+// Generar opciones de Modificación desde TABMODPRODODISEO
 const getCausalOptions = (classification: string) => {
-  // Los valores del catálogo son "Producto Nuevo" y "Producto Modificado"
-  if (classification === "Producto Nuevo" || classification === "Nuevo") {
-    // Filtrar MOTs con mode: "new"
-    return Object.keys(MOT_FIELD_RULES)
-      .filter(motKey => MOT_FIELD_RULES[motKey].mode === "new")
-      .map(motKey => ({ value: motKey, label: motKey }));
-  }
-  if (classification === "Producto Modificado" || classification === "Modificado") {
-    // Filtrar MOTs con mode: "modified"
-    return Object.keys(MOT_FIELD_RULES)
-      .filter(motKey => MOT_FIELD_RULES[motKey].mode === "modified")
-      .map(motKey => ({ value: motKey, label: motKey }));
-  }
-  return [];
+  const normalized = normalizeProductClassificationToCatalog(classification);
+  if (!normalized) return [];
+  return getActiveModificationOptionsByClassification(normalized);
 };
 
 // Material configuration for Moment 1 (ProductInitialCreateModal style)
@@ -1224,11 +1218,15 @@ const resolveInitialStructureType = (
   ]);
 };
 
-const isProductoNuevo = (classification: string): boolean =>
-  classification === "Producto Nuevo" || classification === "Nuevo";
+const isProductoNuevo = (classification: string): boolean => {
+  const normalized = normalizeProductClassificationToCatalog(classification);
+  return normalized === "Producto Nuevo";
+};
 
-const isProductoModificado = (classification: string): boolean =>
-  classification === "Producto Modificado" || classification === "Modificado";
+const isProductoModificado = (classification: string): boolean => {
+  const normalized = normalizeProductClassificationToCatalog(classification);
+  return normalized === "Producto Modificado";
+};
 
 const isDisenoNuevo = (classification: string, projectType: string): boolean =>
   isProductoNuevo(classification) && projectType === "Nuevo diseño";
@@ -2541,10 +2539,9 @@ export default function ProductEditPage() {
   const portfolios = useMemo(() => getPortfolioDisplayRecords(), []);
   const executives = useMemo(() => getActiveExecutiveRecords(), []);
 
-  // Obtener opciones de Clasificación directamente de PRODUCT_CATALOGS
+  // Obtener opciones de Clasificación desde TABMODPRODODISEO
   const classificationOpt = useMemo(() => {
-    const catalogValues = (PRODUCT_CATALOGS.clasificacion as any)?.values || [];
-    return catalogValues.map((value: string) => ({ value, label: value }));
+    return getActiveProductClassificationOptions();
   }, []);
   const subclassificationOpt = useMemo(() => getCatalogOptions("subclassification"), []);
   // unitOfMeasureOpt removed - using UNIT_OPTIONS from PRODUCT_CATALOGS directly

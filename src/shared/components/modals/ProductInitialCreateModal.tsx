@@ -20,6 +20,11 @@ import { UNITS_OF_MEASURE, UNIT_LABELS, UNIT_NORMALIZATION_MAP } from "../../dat
 import { getCatalogOptions } from "../../catalogs";
 import { PRODUCT_CATALOGS, getModificationOptionsByClassification } from "../../data/productCatalogs";
 import {
+  getActiveProductClassificationOptions,
+  getActiveModificationOptionsByClassification,
+  normalizeProductClassificationToCatalog,
+} from "../../data/productModificationCatalog";
+import {
   requiresOriginProduct,
   getAllowedOriginLifecycle,
   getOriginProductHelpText,
@@ -55,19 +60,21 @@ interface SimilarityMatch {
 
 const ClientSearchField = ClientSearch as unknown as ComponentType<any>;
 
-// Obtener opciones de Clasificación desde PRODUCT_CATALOGS
+// Obtener opciones de Clasificación desde TABMODPRODODISEO
 const getClassificationOptions = () => {
-  const catalogValues = (PRODUCT_CATALOGS.clasificacion as any)?.values || [];
-  return catalogValues.map((value: string) => ({ value, label: value }));
+  return getActiveProductClassificationOptions();
 };
 
-
 // Funciones helper para validar clasificación
-const isProductoNuevo = (classification: string): boolean =>
-  classification === "Producto Nuevo" || classification === "Producto nuevo" || classification === "Nuevo";
+const isProductoNuevo = (classification: string): boolean => {
+  const normalized = normalizeProductClassificationToCatalog(classification);
+  return normalized === "Producto Nuevo";
+};
 
-const isProductoModificado = (classification: string): boolean =>
-  classification === "Producto Modificado" || classification === "Producto modificado" || classification === "Modificado";
+const isProductoModificado = (classification: string): boolean => {
+  const normalized = normalizeProductClassificationToCatalog(classification);
+  return normalized === "Producto Modificado";
+};
 
 // Normalize motivo/tipoSolicitud to match productCreationRules expectations
 const normalizeTipoSolicitud = (motivo: string): TipoSolicitud => {
@@ -79,15 +86,11 @@ const normalizeTipoSolicitud = (motivo: string): TipoSolicitud => {
   return motivo as TipoSolicitud;
 };
 
-// Generar opciones de Modificación desde el catálogo centralizado
+// Generar opciones de Modificación desde TABMODPRODODISEO
 const getCausalOptions = (classification: string) => {
-  if (isProductoNuevo(classification)) {
-    return getModificationOptionsByClassification("Producto Nuevo");
-  }
-  if (isProductoModificado(classification)) {
-    return getModificationOptionsByClassification("Producto Modificado");
-  }
-  return [];
+  const normalized = normalizeProductClassificationToCatalog(classification);
+  if (!normalized) return [];
+  return getActiveModificationOptionsByClassification(normalized);
 };
 
 const MATERIAL_MICRON_CONFIG: Record<
