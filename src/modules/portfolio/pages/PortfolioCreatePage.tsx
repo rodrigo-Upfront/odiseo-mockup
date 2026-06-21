@@ -267,14 +267,7 @@ export default function PortfolioCreatePage() {
   const selectedStatus = getStatusById(form.estadoId);
 
   const allClients = useMemo(() => getClientCatalogRecords(), [dataReloaded]);
-  const eligibleClients = useMemo(() =>
-    allClients.filter((c) =>
-      canClientHavePortfolio(c.status) &&
-      c.activeLogical === "1" &&
-      c.clientApprovalStatus === "A"
-    ),
-    [allClients]
-  );
+  const eligibleClients = useMemo(() => allClients.filter((c) => canClientHavePortfolio(c.status)), [allClients]);
   const selectedClient = useMemo(() => allClients.find((c) => c.id === form.clienteId), [allClients, form.clienteId]);
 
   const comercialUsers = useMemo(() => getActiveExecutiveRecords(), [dataReloaded]);
@@ -768,7 +761,7 @@ useEffect(() => {
                 ) : isClientInherited ? (
                   <div>
                     <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-600">
-                      Nombre de Cliente *
+                      Nombre del Cliente *
                     </span>
                     <div className="w-full rounded-lg border border-green-200 bg-green-50 py-2 px-3 text-sm font-semibold text-green-800">
                       {selectedClient?.businessName || "—"}
@@ -779,7 +772,7 @@ useEffect(() => {
                   </div>
                 ) : (
                   <ClientSearch
-                    label="Nombre de Cliente *"
+                    label="Nombre del Cliente *"
                     value={form.clienteId}
                     clients={eligibleClients}
                     onChange={(value) => updateRequiredField("clienteId", value)}
@@ -805,6 +798,17 @@ useEffect(() => {
                       : ""
                   }
                   placeholder="Escribe para buscar ejecutivo..."
+                />
+
+                <FormSelect
+                  label="Estado del Portafolio"
+                  value={form.estadoId}
+                  onChange={(value) => updateField("estadoId", value)}
+                  options={getStatusCatalog().map((status) => ({
+                    value: String(status.id),
+                    label: status.name,
+                  }))}
+                  placeholder="-- Seleccione --"
                 />
               </div>
             </SectionCard>
@@ -987,6 +991,7 @@ useEffect(() => {
               codigo={form.codigo}
               completionPercentage={completionPercentage}
               items={[
+                { label: "Estado", value: selectedStatus?.name || "—" },
                 { label: "Cliente", value: selectedClient?.businessName || "—" },
                 { label: "Ejecutivo", value: selectedExecutive?.name || "—" },
                 { label: "Planta", value: selectedPlant?.name || "—" },
