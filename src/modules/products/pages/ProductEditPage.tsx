@@ -5084,10 +5084,10 @@ if (!project) {
                           )}
                         </div>
 
-                        {/* Línea 2: Clase de Impresión + Tipo de Impresión + Forma de Impresión */}
+                        {/* Línea 2: Impresión + Tipo de Impresión + Forma de Impresión */}
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                           <FormSelect
-                            label="Clase de Impresión *"
+                            label="Impresión *"
                             value={form.printClass}
                             onChange={(value) => updateField("printClass", value)}
                             onBlur={() => markFieldAsTouched("printClass")}
