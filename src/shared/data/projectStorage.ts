@@ -284,20 +284,52 @@ export type ProjectRecord = {
 
   // Capas
   layer1Material?: string;
+  layer1MaterialCode?: string;
+  layer1MaterialLabel?: string;
+  layer1MaterialId?: number;
+  layer1MaterialGroup?: string;
   layer1Micron?: string;
+  layer1Micraje?: string;
+  layer1MicronCode?: string;
+  layer1MicronType?: string;
   layer1Grammage?: string;
+  layer1Snapshot?: any;
 
   layer2Material?: string;
+  layer2MaterialCode?: string;
+  layer2MaterialLabel?: string;
+  layer2MaterialId?: number;
+  layer2MaterialGroup?: string;
   layer2Micron?: string;
+  layer2Micraje?: string;
+  layer2MicronCode?: string;
+  layer2MicronType?: string;
   layer2Grammage?: string;
+  layer2Snapshot?: any;
 
   layer3Material?: string;
+  layer3MaterialCode?: string;
+  layer3MaterialLabel?: string;
+  layer3MaterialId?: number;
+  layer3MaterialGroup?: string;
   layer3Micron?: string;
+  layer3Micraje?: string;
+  layer3MicronCode?: string;
+  layer3MicronType?: string;
   layer3Grammage?: string;
+  layer3Snapshot?: any;
 
   layer4Material?: string;
+  layer4MaterialCode?: string;
+  layer4MaterialLabel?: string;
+  layer4MaterialId?: number;
+  layer4MaterialGroup?: string;
   layer4Micron?: string;
+  layer4Micraje?: string;
+  layer4MicronCode?: string;
+  layer4MicronType?: string;
   layer4Grammage?: string;
+  layer4Snapshot?: any;
 
   specialStructureSpecs?: string;
   grammage?: string;
@@ -1216,6 +1248,46 @@ export function createProjectFromPortfolio(params: {
     layer2Material?: string;
     layer3Material?: string;
     layer4Material?: string;
+    layer1MaterialCode?: string;
+    layer2MaterialCode?: string;
+    layer3MaterialCode?: string;
+    layer4MaterialCode?: string;
+    layer1MaterialLabel?: string;
+    layer2MaterialLabel?: string;
+    layer3MaterialLabel?: string;
+    layer4MaterialLabel?: string;
+    layer1MaterialId?: number;
+    layer2MaterialId?: number;
+    layer3MaterialId?: number;
+    layer4MaterialId?: number;
+    layer1MaterialGroup?: string;
+    layer2MaterialGroup?: string;
+    layer3MaterialGroup?: string;
+    layer4MaterialGroup?: string;
+    layer1Micron?: string;
+    layer2Micron?: string;
+    layer3Micron?: string;
+    layer4Micron?: string;
+    layer1Micraje?: string;
+    layer2Micraje?: string;
+    layer3Micraje?: string;
+    layer4Micraje?: string;
+    layer1MicronCode?: string;
+    layer2MicronCode?: string;
+    layer3MicronCode?: string;
+    layer4MicronCode?: string;
+    layer1MicronType?: string;
+    layer2MicronType?: string;
+    layer3MicronType?: string;
+    layer4MicronType?: string;
+    layer1Grammage?: string | number;
+    layer2Grammage?: string | number;
+    layer3Grammage?: string | number;
+    layer4Grammage?: string | number;
+    layer1Snapshot?: any;
+    layer2Snapshot?: any;
+    layer3Snapshot?: any;
+    layer4Snapshot?: any;
     estructuraCalculada?: string;
     ancho?: string;
     largo?: string;
@@ -1277,9 +1349,53 @@ export function createProjectFromPortfolio(params: {
 
     // Momento 1 fields
     layer1Material: params.initialData.layer1Material || "",
+    layer1MaterialCode: params.initialData.layer1MaterialCode || params.initialData.layer1Material || "",
+    layer1MaterialLabel: params.initialData.layer1MaterialLabel || "",
+    layer1MaterialId: params.initialData.layer1MaterialId || undefined,
+    layer1MaterialGroup: params.initialData.layer1MaterialGroup || "",
+    layer1Micron: params.initialData.layer1Micron || "",
+    layer1Micraje: params.initialData.layer1Micraje || params.initialData.layer1Micron || "",
+    layer1MicronCode: params.initialData.layer1MicronCode || "",
+    layer1MicronType: params.initialData.layer1MicronType || "",
+    layer1Grammage: params.initialData.layer1Grammage ? String(params.initialData.layer1Grammage) : "",
+    layer1Snapshot: params.initialData.layer1Snapshot || undefined,
+
     layer2Material: params.initialData.layer2Material || "",
+    layer2MaterialCode: params.initialData.layer2MaterialCode || params.initialData.layer2Material || "",
+    layer2MaterialLabel: params.initialData.layer2MaterialLabel || "",
+    layer2MaterialId: params.initialData.layer2MaterialId || undefined,
+    layer2MaterialGroup: params.initialData.layer2MaterialGroup || "",
+    layer2Micron: params.initialData.layer2Micron || "",
+    layer2Micraje: params.initialData.layer2Micraje || params.initialData.layer2Micron || "",
+    layer2MicronCode: params.initialData.layer2MicronCode || "",
+    layer2MicronType: params.initialData.layer2MicronType || "",
+    layer2Grammage: params.initialData.layer2Grammage ? String(params.initialData.layer2Grammage) : "",
+    layer2Snapshot: params.initialData.layer2Snapshot || undefined,
+
     layer3Material: params.initialData.layer3Material || "",
+    layer3MaterialCode: params.initialData.layer3MaterialCode || params.initialData.layer3Material || "",
+    layer3MaterialLabel: params.initialData.layer3MaterialLabel || "",
+    layer3MaterialId: params.initialData.layer3MaterialId || undefined,
+    layer3MaterialGroup: params.initialData.layer3MaterialGroup || "",
+    layer3Micron: params.initialData.layer3Micron || "",
+    layer3Micraje: params.initialData.layer3Micraje || params.initialData.layer3Micron || "",
+    layer3MicronCode: params.initialData.layer3MicronCode || "",
+    layer3MicronType: params.initialData.layer3MicronType || "",
+    layer3Grammage: params.initialData.layer3Grammage ? String(params.initialData.layer3Grammage) : "",
+    layer3Snapshot: params.initialData.layer3Snapshot || undefined,
+
     layer4Material: params.initialData.layer4Material || "",
+    layer4MaterialCode: params.initialData.layer4MaterialCode || params.initialData.layer4Material || "",
+    layer4MaterialLabel: params.initialData.layer4MaterialLabel || "",
+    layer4MaterialId: params.initialData.layer4MaterialId || undefined,
+    layer4MaterialGroup: params.initialData.layer4MaterialGroup || "",
+    layer4Micron: params.initialData.layer4Micron || "",
+    layer4Micraje: params.initialData.layer4Micraje || params.initialData.layer4Micron || "",
+    layer4MicronCode: params.initialData.layer4MicronCode || "",
+    layer4MicronType: params.initialData.layer4MicronType || "",
+    layer4Grammage: params.initialData.layer4Grammage ? String(params.initialData.layer4Grammage) : "",
+    layer4Snapshot: params.initialData.layer4Snapshot || undefined,
+
     structureType: params.initialData.estructuraCalculada || "",
     estimatedVolume: params.initialData.volumenCantidadReferencial || "",
     unitOfMeasure: params.initialData.unidad || "",
