@@ -80,6 +80,12 @@ export type CatalogExportPackaging = {
   name: string;
 };
 
+export type CatalogSplices = {
+  id: number;
+  code: string;
+  name: string;
+};
+
 export const STATUS_CATALOG: CatalogStatus[] = [
   { id: 1, code: "REG", name: "Registrado" },
   { id: 2, code: "REV", name: "En revisión" },
@@ -4018,6 +4024,13 @@ export const MATERIAL_PACKAGING_CATALOG: CatalogMaterialPackaging[] = [
 export const EXPORT_PACKAGING_CATALOG: CatalogExportPackaging[] = [
   { id: 1, code: "E3", name: "E3. Maritimo normal" },
   { id: 2, code: "E4", name: "E4. Maritimo consolidado" },
+];
+
+export const SPLICES_CATALOG: CatalogSplices[] = [
+  { id: 1, code: "1_EMPALME", name: "1 EMPALME" },
+  { id: 2, code: "2_EMPALME", name: "2 EMPALME" },
+  { id: 3, code: "3_EMPALME", name: "3 EMPALME" },
+  { id: 4, code: "SIN_EMPALMES", name: "SIN EMPALMES" },
 ];
 
 export const TECHNICAL_APPLICATION_CATALOG: CatalogTechnicalApplication[] = [

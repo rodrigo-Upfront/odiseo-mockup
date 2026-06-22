@@ -26,7 +26,7 @@ import {
 } from "../../../shared/data/projectWorkflow";
 import { getActiveExecutiveRecords } from "../../../shared/data/executiveStorage";
 import { getActiveUsers } from "../../../shared/data/userStorage";
-import { getEdagByCodeAndVersion, TECHNICAL_APPLICATION_CATALOG, MATERIAL_PACKAGING_CATALOG, EXPORT_PACKAGING_CATALOG } from "../../../shared/data/mockDatabase";
+import { getEdagByCodeAndVersion, TECHNICAL_APPLICATION_CATALOG, MATERIAL_PACKAGING_CATALOG, EXPORT_PACKAGING_CATALOG, SPLICES_CATALOG } from "../../../shared/data/mockDatabase";
 import { isGenericPackingMachine } from "../../../shared/utils/validationUtils";
 import {
   isGuidedFormatEnabled,
@@ -6654,12 +6654,10 @@ if (!project) {
                       }}
                       onBlur={() => markFieldAsTouched("splices")}
                       error={getError("splices")}
-                      options={[
-                        { value: "Sin empalmes", label: "Sin empalmes" },
-                        { value: "Empalme simple", label: "Empalme simple" },
-                        { value: "Empalme reforzado", label: "Empalme reforzado" },
-                        { value: "Empalme adhesivo", label: "Empalme adhesivo" },
-                      ]}
+                      options={SPLICES_CATALOG.map((item) => ({
+                        value: item.code,
+                        label: item.name,
+                      }))}
                       placeholder="-- Seleccione --"
                     />
                   </div>
