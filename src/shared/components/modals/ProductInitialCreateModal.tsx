@@ -15,6 +15,7 @@ import * as clientStorage from "../../data/clientStorage";
 import * as projectStorage from "../../data/projectStorage";
 import * as userStorage from "../../data/userStorage";
 import { getAllApprovedProducts } from "../../data/approvedProductStorage";
+import { getActiveExecutiveRecords } from "../../data/executiveStorage";
 
 import { getCatalogOptions } from "../../catalogs";
 import { PRODUCT_CATALOGS, getModificationOptionsByClassification } from "../../data/productCatalogs";
@@ -769,24 +770,45 @@ const resolvePortfolioExecutiveName = (
 
   if (!valueToResolve) return "";
 
-const valueVariants = getUserCodeVariants(valueToResolve);
-const normalizedValue = normalizeText(valueToResolve);
+  const normalizedValue = normalizeText(valueToResolve);
 
-const matchedUser = getAllUserRecordsSafe().find((user) => {
-  const userCodeVariants = getUserCodeVariants(getUserCodeFromAny(user));
-  const userName = normalizeText(getUserNameFromAny(user));
-  const userEmail = normalizeText(getUserEmailFromAny(user));
+  // Try to find in commercial executives first (if ID-based)
+  if (rawExecutiveId) {
+    const executives = getActiveExecutiveRecords();
+    const matchedExecutive = executives.find((exec) => {
+      const execId = String(exec.id || "");
+      const execName = normalizeText(String(exec.name || ""));
+      const execCode = normalizeText(String(exec.code || ""));
 
-  const sameCode = userCodeVariants.some((code) =>
-    valueVariants.includes(code),
-  );
+      return (
+        execId === String(rawExecutiveId) ||
+        (!!execName && execName === normalizedValue) ||
+        (!!execCode && execCode === normalizedValue)
+      );
+    });
 
-  return (
-    sameCode ||
-    (!!userName && userName === normalizedValue) ||
-    (!!userEmail && userEmail === normalizedValue)
-  );
-});
+    if (matchedExecutive) {
+      if (matchedExecutive.name) return matchedExecutive.name;
+    }
+  }
+
+  // Fallback to user records
+  const valueVariants = getUserCodeVariants(valueToResolve);
+  const matchedUser = getAllUserRecordsSafe().find((user) => {
+    const userCodeVariants = getUserCodeVariants(getUserCodeFromAny(user));
+    const userName = normalizeText(getUserNameFromAny(user));
+    const userEmail = normalizeText(getUserEmailFromAny(user));
+
+    const sameCode = userCodeVariants.some((code) =>
+      valueVariants.includes(code),
+    );
+
+    return (
+      sameCode ||
+      (!!userName && userName === normalizedValue) ||
+      (!!userEmail && userEmail === normalizedValue)
+    );
+  });
 
   const resolvedUserName = getUserNameFromAny(matchedUser);
 
@@ -1988,9 +2010,11 @@ const filteredPortfoliosForClient = useMemo(() => {
   const inheritedSector = getRecordValue(selectedPortfolio, ["sector"]);
 
   const inheritedAfMarketId = getRecordValue(selectedPortfolio, [
-    "af",
     "afMarketId",
     "afMarketID",
+    "af",
+    "afmarket",
+    "mercadoAf",
   ]);
 
   // Check if portfolio belongs to selected client

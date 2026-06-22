@@ -11,7 +11,7 @@
  */
 
 import { getCatalogValues } from "./catalog.service";
-import { PRODUCT_CATALOGS } from "../data/productCatalogs";
+import { FINAL_USE_CATALOG } from "../data/mockDatabase";
 
 // ═════════════════════════════════════════════════════════════════════
 // TIPOS
@@ -331,27 +331,30 @@ export function getWrappingByCode(code: string): CatalogItem | undefined {
 // ═════════════════════════════════════════════════════════════════════
 
 export function getFinalUses(): any[] {
-  const values = PRODUCT_CATALOGS?.usoFinal?.values ?? [];
-
-  return values.map((name: string, idx: number) => ({
-    id: idx + 1,
-    code: `USE-${String(idx + 1).padStart(3, "0")}`,
-    name,
-    useFinal: name,
-    sector: "General",
-    segment: "General",
-    subSegment: "General",
-    afMarketId: "",
+  return FINAL_USE_CATALOG.map((use) => ({
+    id: use.id,
+    code: use.code,
+    name: use.useFinal,
+    useFinal: use.useFinal,
+    sector: use.sector,
+    segment: use.segment,
+    subSegment: use.subSegment,
+    afMarketId: use.afMarketId,
+    confidence: use.confidence,
+    observation: use.observation,
   }));
 }
 
 export function getFinalUseById(id: string | number): any | undefined {
-  const target = normalizeCatalogText(id);
+  const target = normalizeCatalogText(String(id));
 
   return getFinalUses().find((use) =>
-    [use.id, use.code, use.name, use.useFinal].some(
-      (candidate) => normalizeCatalogText(candidate) === target
-    )
+    [
+      String(use.id),
+      use.code,
+      use.name,
+      use.useFinal,
+    ].some((candidate) => normalizeCatalogText(candidate) === target)
   );
 }
 
