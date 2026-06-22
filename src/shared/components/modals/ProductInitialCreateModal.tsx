@@ -37,7 +37,6 @@ import {
   type MicronFrontendControl,
 } from "../../data/productMaterialCatalog";
 import {
-  requiresOriginProduct,
   getAllowedOriginLifecycle,
   getOriginProductHelpText,
   getOriginProductLabel,
@@ -45,6 +44,13 @@ import {
   getInitialSuggestedSkuLifecycle,
   type TipoSolicitud,
 } from "../../utils/productCreationRules";
+import {
+  generateNewEDAG,
+  generateNewEM,
+} from "../../utils/productCodeRules";
+import {
+  generateSKUForNewRequest,
+} from "../../utils/productSkuCodeUtils";
 
 type AnyRecord = Record<string, unknown>;
 type PortfolioRecord = AnyRecord;
@@ -1034,10 +1040,20 @@ const createProjectFromPortfolioSafe = (payload: {
     return (fn as (value: typeof payload) => unknown)(payload);
   }
 
+  // Fallback: preserve SKU codes from initialData
+  const technicalRequestCode = `PRJ-${Date.now()}`;
+  const skuCode = payload.initialData.skuCode || payload.initialData.code || "";
+
   return {
-    id: `PRJ-${Date.now()}`,
-    projectCode: `PRJ-${Date.now()}`,
+    id: technicalRequestCode,
+    projectCode: technicalRequestCode,
+    projectRequestCode: technicalRequestCode,
     ...payload.initialData,
+    // Ensure SKU is not overwritten
+    code: skuCode,
+    productCode: skuCode,
+    skuCode: skuCode,
+    currentSkuCode: skuCode,
   };
 };
 
@@ -1499,6 +1515,63 @@ const getNextAvailableSku = (): string => {
   return `SKU-${paddedNumber}`;
 };
 
+// ============= Helpers de decisión SKU =============
+
+const isNuevaEstructura = (causalValues: string[]): boolean => {
+  return causalValues.some(
+    (value) => normalizeText(value) === normalizeText("Nueva estructura"),
+  );
+};
+
+const shouldRequireCurrentSku = (
+  classification: string,
+  causalValues: string[],
+): boolean => {
+  if (!classification || causalValues.length === 0) return false;
+
+  // Producto Modificado siempre requiere SKU actual.
+  if (isProductoModificado(classification)) return true;
+
+  // Producto Nuevo + Nueva estructura no requiere SKU base obligatorio.
+  if (isProductoNuevo(classification) && isNuevaEstructura(causalValues)) {
+    return false;
+  }
+
+  // Producto Nuevo + otras casuísticas puede/requiere SKU base como referencia.
+  if (isProductoNuevo(classification)) return true;
+
+  return false;
+};
+
+const shouldGenerateNewSkuSequence = (
+  classification: string,
+): boolean => {
+  // Todo Producto Nuevo genera nuevo correlativo.
+  return isProductoNuevo(classification);
+};
+
+const shouldGenerateVersionFromCurrentSku = (
+  classification: string,
+): boolean => {
+  // Solo Producto Modificado versiona el SKU actual.
+  return isProductoModificado(classification);
+};
+
+const getSkuSourceRecords = (): Array<Record<string, unknown>> => {
+  const projects = projectStorage.getProjectRecords
+    ? projectStorage.getProjectRecords()
+    : [];
+
+  const approvedProducts = getAllApprovedProducts
+    ? getAllApprovedProducts()
+    : [];
+
+  return [
+    ...(projects as Array<Record<string, unknown>>),
+    ...(approvedProducts as Array<Record<string, unknown>>),
+  ];
+};
+
 // Factory function para crear la función hydrateFromBaseProduct
 // con acceso a los setters del componente
 const createHydrateFunction = (setters: any) => {
@@ -1665,6 +1738,68 @@ const [visibleLayerCount, setVisibleLayerCount] = useState(1);
     }, 5000);
   };
 
+  // ============= SKU Generation Helpers =============
+
+  const getSelectedCurrentSkuCode = (): string => {
+    const selectedBaseSkuCode = selectedBaseProduct
+      ? String(
+          selectedBaseProduct.skuCode ||
+            selectedBaseProduct.currentSkuCode ||
+            selectedBaseProduct.productCode ||
+            selectedBaseProduct.code ||
+            selectedBaseProduct.approvedProductCode ||
+            "",
+        )
+      : "";
+
+    return formatSkuWithVersion(
+      selectedBaseSkuCode || productoBaseCodigo.trim(),
+      productoBaseVersion.trim(),
+    );
+  };
+
+  const buildPreviewSkuCode = (): string => {
+    if (!motivo || causal.length === 0) return "";
+
+    const sourceRecords = getSkuSourceRecords();
+
+    // Producto Nuevo: siempre nuevo correlativo, versión 00.
+    if (shouldGenerateNewSkuSequence(motivo)) {
+      const skuResult = generateSKUForNewRequest(
+        "Nuevo",
+        sourceRecords,
+        undefined,
+      );
+
+      if (skuResult.errors.length > 0) return "";
+
+      return skuResult.skuCode;
+    }
+
+    // Producto Modificado: mismo correlativo del SKU actual + versión +1.
+    if (shouldGenerateVersionFromCurrentSku(motivo)) {
+      const currentSkuCode = getSelectedCurrentSkuCode();
+
+      if (!currentSkuCode) return "";
+
+      const skuResult = generateSKUForNewRequest(
+        "Modificado",
+        sourceRecords,
+        currentSkuCode,
+      );
+
+      if (skuResult.errors.length > 0) return "";
+
+      return skuResult.skuCode;
+    }
+
+    return "";
+  };
+
+  const mustUseCurrentSku = shouldRequireCurrentSku(motivo, causal);
+
+  const canModifyLayerStructure = isProductoNuevo(motivo) && isNuevaEstructura(causal);
+
   const isPortfolioLocked = Boolean(propPortfolio || initialPortfolioCode);
 
   // Resolve selected client early for use in completion flags
@@ -1689,18 +1824,14 @@ const [visibleLayerCount, setVisibleLayerCount] = useState(1);
   const isMotivoStepComplete = Boolean(motivo);
   const isCausalStepComplete = causal.length > 0;
 
-  const requiresProductoBase = motivo && causal.length > 0
-    ? requiresOriginProduct(normalizeTipoSolicitud(motivo), causal[0])
-    : false;
-
   const isProductoBaseStepComplete = Boolean(
-    !requiresProductoBase ||
+    !mustUseCurrentSku ||
       productoBaseCodigo.trim() ||
       productoBaseNombre.trim()
   );
 
   const isProductoBaseVersionStepComplete = Boolean(
-    !requiresProductoBase || productoBaseVersion.trim()
+    !mustUseCurrentSku || productoBaseVersion.trim()
   );
 
   const isProjectNameStepComplete = Boolean(projectName.trim());
@@ -1715,12 +1846,12 @@ const [visibleLayerCount, setVisibleLayerCount] = useState(1);
   const canEditPortfolio = canEditForm && isClientStepComplete && !isPortfolioLocked;
   // canEditMotivo will be set after isPortfolioStepComplete is computed
   const canEditCausal = canEditForm && isMotivoStepComplete;
-  const canEditProductoBase = canEditForm && isCausalStepComplete && (requiresProductoBase || causal.includes("Nueva estructura"));
+  const canEditProductoBase = canEditForm && isCausalStepComplete && mustUseCurrentSku;
   const canEditProductoBaseVersion =
     canEditProductoBase && isProductoBaseStepComplete;
   const canEditProjectName =
     canEditForm && isCausalStepComplete &&
-    (!requiresProductoBase ||
+    (!mustUseCurrentSku ||
       (isProductoBaseStepComplete && isProductoBaseVersionStepComplete));
   const canEditVolumen = canEditProjectName && isProjectNameStepComplete;
   const canEditUnidad = canEditVolumen && isVolumenStepComplete;
@@ -2046,6 +2177,18 @@ const nombreTecnicoCalculado = useMemo(() => {
     }
   }, [layer3]);
 
+  // Actualizar preview del SKU cuando cambian los factores clave
+  useEffect(() => {
+    const previewSkuCode = buildPreviewSkuCode();
+    setNewSkuCode(previewSkuCode);
+  }, [
+    motivo,
+    causal,
+    selectedBaseProduct,
+    productoBaseCodigo,
+    productoBaseVersion,
+  ]);
+
   useEffect(() => {
     if (!hasMinDataForSearch) {
       setSimilarityMatches([]);
@@ -2268,41 +2411,24 @@ const nombreTecnicoCalculado = useMemo(() => {
       newErrors.descripcion = "Ingresa la descripción breve de la necesidad.";
     }
 
-    // Validate origin product requirement
-    if (motivo && causal.length > 0) {
+    // Validate SKU base requirement based on new logic
+    if (motivo && causal.length > 0 && mustUseCurrentSku) {
       const hasOriginProductSelected = Boolean(
         selectedBaseProduct ||
           productoBaseCodigo.trim() ||
           productoBaseNombre.trim()
       );
 
-      const originLifecycle = resolveSkuLifecycleCodeFromProduct(
-        selectedBaseProduct,
-        productoBaseCodigo ? `${productoBaseCodigo}-${productoBaseVersion || ""}` : "",
-      );
-
-      const normalizedMotivo = normalizeTipoSolicitud(motivo);
-      if (requiresOriginProduct(normalizedMotivo, causal[0])) {
-        if (!hasOriginProductSelected) {
-          newErrors.productoBase = "Producto base / SKU vigente es requerido para continuar.";
-        } else {
-          const validation = isOriginProductAllowed(
-            normalizedMotivo,
-            causal[0],
-            originLifecycle,
-          );
-
-          if (!validation.valid && validation.message) {
-            newErrors.productoBase = validation.message;
-          }
-        }
+      if (!hasOriginProductSelected) {
+        newErrors.productoBase = isProductoNuevo(motivo)
+          ? "Selecciona un SKU base o referencia técnica para esta solicitud."
+          : "Selecciona un SKU actual para generar la nueva versión.";
       }
 
-      // For "Producto modificado", also require version
-      if (isProductoModificado(motivo) && requiresOriginProduct(normalizedMotivo, causal[0])) {
-        if (!productoBaseVersion.trim()) {
-          newErrors.productoBaseVersion = "Ingresa la versión del SKU aprobado.";
-        }
+      if (!productoBaseVersion.trim()) {
+        newErrors.productoBaseVersion = isProductoNuevo(motivo)
+          ? "El SKU base debe tener versión."
+          : "El SKU actual debe tener versión.";
       }
     }
 
@@ -2544,6 +2670,7 @@ const handleLayerChange = (index: number, value: string) => {
 };
 
 const handleAddLayer = () => {
+  if (!canModifyLayerStructure) return;
   if (visibleLayerCount >= 4) return;
 
   const lastVisibleLayerValue = getLayerValue(visibleLayerCount - 1);
@@ -2554,6 +2681,7 @@ const handleAddLayer = () => {
 };
 
 const handleRemoveLastLayer = () => {
+  if (!canModifyLayerStructure) return;
   if (visibleLayerCount <= 1) return;
 
   const layerIndexToRemove = visibleLayerCount - 1;
@@ -2704,9 +2832,82 @@ const handleRemoveLastLayer = () => {
       const layer3Snapshot = layer3 ? buildLayerTechnicalSnapshot({ materialValue: layer3, micronValue: layer3Micron }) : null;
       const layer4Snapshot = layer4 ? buildLayerTechnicalSnapshot({ materialValue: layer4, micronValue: layer4Micron }) : null;
 
+      // Generar códigos de producto (SKU, EDAG, EM)
+      const sourceRecords = getSkuSourceRecords();
+      const currentSkuCode = getSelectedCurrentSkuCode();
+
+      let skuResult;
+
+      if (shouldGenerateNewSkuSequence(motivo)) {
+        // Producto Nuevo: siempre nuevo correlativo.
+        skuResult = generateSKUForNewRequest(
+          "Nuevo",
+          sourceRecords,
+          undefined,
+        );
+      } else if (shouldGenerateVersionFromCurrentSku(motivo)) {
+        // Producto Modificado: versión N+1 del SKU actual.
+        if (!currentSkuCode) {
+          addStep("✗ Error generando SKU: falta SKU actual para generar nueva versión.");
+          setIsCreating(false);
+          return;
+        }
+
+        skuResult = generateSKUForNewRequest(
+          "Modificado",
+          sourceRecords,
+          currentSkuCode,
+        );
+      } else {
+        addStep("✗ Error generando SKU: clasificación no reconocida.");
+        setIsCreating(false);
+        return;
+      }
+
+      if (skuResult.errors.length > 0) {
+        addStep(`✗ Error generando SKU: ${skuResult.errors.join(", ")}`);
+        setIsCreating(false);
+        return;
+      }
+
+      const generatedSkuCode = newSkuCode || skuResult.skuCode;
+      const edagCode = generateNewEDAG(60000 + sourceRecords.length);
+      const emCode = generateNewEM(50000 + sourceRecords.length);
+
+      // Extraer partes del SKU para guardar como componentes
+      const skuParts = generatedSkuCode.split('-');
+      const extractedSkuSequence = parseInt(skuParts[1], 10) || skuResult.skuSequence;
+      const extractedSkuVersion = parseInt(skuParts[3], 10) || skuResult.skuVersion;
+
       const createdProject = createProjectFromPortfolioSafe({
         portfolio: selectedPortfolio!,
         initialData: {
+          // Códigos de producto generados automáticamente
+          // SKU: guardar en múltiples aliases para garantizar que se preserve
+          code: generatedSkuCode,
+          productCode: generatedSkuCode,
+          skuCode: generatedSkuCode,
+          currentSkuCode: generatedSkuCode,
+          codigoSku: generatedSkuCode,
+          codigoProducto: generatedSkuCode,
+          codigoProductoOdiseo: generatedSkuCode,
+
+          skuSequence: extractedSkuSequence,
+          skuLifecycleCode: 'E',
+          skuLifecycleName: 'Preliminar',
+          skuVersion: extractedSkuVersion,
+
+          productLifecycleCode: 'E',
+          productLifecycleName: 'Preliminar',
+
+          // EDAG y EM
+          edagCode,
+          edagSequence: 60000 + allProjects.length,
+          edagVersion: 0,
+          emCode,
+          emSequence: 50000 + allProjects.length,
+          emVersion: 0,
+
           // CORRECCIÓN: Classification depende de motivo
           classification: normalizedClassification,
           clasificacion: normalizedClassification,
@@ -2833,14 +3034,14 @@ const handleRemoveLastLayer = () => {
           sector: inheritedSector,
           afMarketId: inheritedAfMarketId,
 
-          // CORRECCIÓN: Guardar producto base cuando se requiere O cuando está seleccionado
-          // (para Nuevo + Nuevos insumos, Producto Nuevo + referencias, Modificado, etc.)
-          ...(requiresProductoBase || selectedBaseProduct || productoBaseCodigo.trim()) && {
+          // Guardar SKU base cuando existe (para Producto Nuevo con referencias o Modificado)
+          ...(mustUseCurrentSku || selectedBaseProduct || productoBaseCodigo.trim()) && {
+            skuBaseCode: currentSkuCode || undefined,
             productoBaseId: productoBaseId || undefined,
             productoBaseCodigo: productoBaseCodigo.trim(),
             productoBaseNombre: productoBaseNombre.trim(),
             productoBaseVersion: productoBaseVersion.trim(),
-            approvedProductCode: productoBaseCodigo.trim(),
+            approvedProductCode: currentSkuCode || productoBaseCodigo.trim(),
             approvedProductSnapshot: selectedBaseProduct,
             originProductSnapshot: selectedBaseProduct,
           },
@@ -3292,17 +3493,15 @@ const handleRemoveLastLayer = () => {
                 </div>
               </div>
 
-              {causal.length > 0 && (
+              {causal.length > 0 && mustUseCurrentSku && (
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <div className="space-y-1">
                     <label className="block text-sm font-semibold text-slate-700">
-                      {motivo && causal.length > 0
-                        ? getOriginProductLabel(normalizeTipoSolicitud(motivo), causal[0])
-                        : "Producto base / SKU vigente"}
+                      {isProductoNuevo(motivo)
+                        ? "SKU Base / Referencia técnica"
+                        : "SKU Actual"}
                       {" "}
-                      {motivo && causal.length > 0 && requiresOriginProduct(normalizeTipoSolicitud(motivo), causal[0])
-                        ? "*"
-                        : ""}
+                      {mustUseCurrentSku ? "*" : ""}
                     </label>
                     {motivo && causal.length > 0 && (
                       <p className="text-xs text-slate-500 italic">
@@ -3366,7 +3565,7 @@ const handleRemoveLastLayer = () => {
                   </div>
 
                   <FormInput
-                    label="Código SKU Actual *"
+                    label={isProductoNuevo(motivo) ? "Código SKU Base *" : "Código SKU Actual *"}
                     value={formatSkuWithVersion(productoBaseCodigo, productoBaseVersion)}
                     onChange={(value) => {
                       const wasEmpty = !productoBaseVersion.trim();
@@ -3405,21 +3604,26 @@ const handleRemoveLastLayer = () => {
                         );
                       }
                     }}
-                    placeholder="Ej. SKU-00001-B-01"
+                    placeholder={isProductoNuevo(motivo) ? "Ej. SKU-00001-A-00" : "Ej. SKU-00001-A-01"}
                     error={errors.productoBaseVersion}
                     disabled={true}
                   />
                 </div>
               )}
 
-              {newSkuCode && (
+              {causal.length > 0 && newSkuCode && (
                 <div className="space-y-1">
                   <label className="block text-sm font-semibold text-slate-700">
-                    Nuevo Código SKU {isProductoModificado(motivo) && "(N+1)"}
+                    {isProductoModificado(motivo) ? "Nuevo Código SKU (N+1)" : "Código SKU Generado"}
                   </label>
                   <div className="flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2">
                     <span className="text-sm font-mono text-slate-900">{newSkuCode}</span>
                   </div>
+                  {isProductoNuevo(motivo) && mustUseCurrentSku && (
+                    <p className="text-xs text-slate-500">
+                      El SKU base se usa como referencia técnica. El producto nuevo mantiene nuevo correlativo.
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -3590,9 +3794,10 @@ const handleRemoveLastLayer = () => {
         <button
           type="button"
           onClick={handleRemoveLastLayer}
-          disabled={!canEditMateriales}
+          disabled={!canEditMateriales || !canModifyLayerStructure}
+          title={!canModifyLayerStructure ? "Eliminar capas solo está disponible para Producto Nuevo con Nueva estructura" : ""}
           className={`h-9 rounded-lg border border-slate-200 px-3 text-xs font-semibold transition ${
-            canEditMateriales
+            canEditMateriales && canModifyLayerStructure
               ? "text-slate-600 hover:bg-slate-50"
               : "cursor-not-allowed bg-slate-50 text-slate-400"
           }`}
@@ -3606,12 +3811,15 @@ const handleRemoveLastLayer = () => {
         onClick={handleAddLayer}
         disabled={
           !canEditMateriales ||
+          !canModifyLayerStructure ||
           visibleLayerCount >= 4 ||
           !getLayerValue(visibleLayerCount - 1)
         }
+        title={!canModifyLayerStructure ? "Agregar capas solo está disponible para Producto Nuevo con Nueva estructura" : ""}
         className={[
           "h-9 rounded-lg px-3 text-xs font-semibold transition",
           !canEditMateriales ||
+          !canModifyLayerStructure ||
           visibleLayerCount >= 4 ||
           !getLayerValue(visibleLayerCount - 1)
             ? "cursor-not-allowed bg-slate-100 text-slate-400"
@@ -3623,6 +3831,19 @@ const handleRemoveLastLayer = () => {
     </div>
   </div>
 
+  {!canModifyLayerStructure && canEditMateriales && (
+    <div className="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2.5">
+      <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
+      <p className="text-xs text-amber-700">
+        {isProductoNuevo(motivo) ? (
+          <>La modificación de capas solo está disponible para <strong>Producto Nuevo</strong> con <strong>Nueva estructura</strong>.</>
+        ) : (
+          <>La cantidad de capas no puede modificarse para <strong>{motivo}</strong>. Las capas están heredadas del portafolio.</>
+        )}
+      </p>
+    </div>
+  )}
+
   <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
   {Array.from({ length: visibleLayerCount }).map((_, index) => {
     const layerNumber = index + 1;
@@ -3630,7 +3851,7 @@ const handleRemoveLastLayer = () => {
     const selectedMaterial = getLayerValue(index);
     const selectedMicron = getLayerMicronValue(index);
     const micronControl = getMicronControlForMaterial(selectedMaterial);
-    const isDisabled = !canEditMateriales || (isInheritedFromBase && !(isProductoNuevo(motivo) && causal.includes("Nueva estructura")));
+    const isDisabled = !canEditMateriales || (isInheritedFromBase && !canModifyLayerStructure);
 
     return (
       <div

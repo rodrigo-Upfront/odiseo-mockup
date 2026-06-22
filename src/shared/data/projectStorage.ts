@@ -96,7 +96,9 @@ export type ProjectRecord = {
   currentSkuCode?: string;
   siProductCode?: string;
   skuCode?: string;
-  skuLifecycleCode?: "A" | "E" | "B";
+  skuSequence?: number;
+  skuLifecycleCode?: "A" | "E" | "B" | "I";
+  skuVersion?: number;
   skuLifecycleLabel?: "Aprobado" | "Muestra" | "Base";
 
   // Workflow v2: Etapa y validaciones técnicas internas
@@ -231,7 +233,11 @@ export type ProjectRecord = {
   specialDesignSpecs?: string;
   specialDesignComments?: string;
   edagCode?: string;
-  edagVersion?: string;
+  edagSequence?: number;
+  edagVersion?: number;
+  emCode?: string;
+  emSequence?: number;
+  emVersion?: number;
   colorObjective?: string[];
   objetivoColor?: string[];
   colorObjectiveComment?: string;
@@ -1300,11 +1306,23 @@ export function createProjectFromPortfolio(params: {
   createdBy?: string;
 }): ProjectRecord {
   const now = new Date().toISOString();
-  const code = getNextProjectCode();
+  const technicalRequestCode = getNextProjectCode();
+
+  // Resolve SKU code from initialData - should be passed from ProductInitialCreateModal
+  const skuCode = (params.initialData as any).skuCode ||
+                  (params.initialData as any).code ||
+                  (params.initialData as any).productCode ||
+                  (params.initialData as any).currentSkuCode ||
+                  "";
+
+  // Use SKU if available, otherwise use technical request code
+  const projectCode = skuCode || technicalRequestCode;
 
   const project: ProjectRecord = {
-    code,
-    id: code,
+    code: projectCode,
+    id: technicalRequestCode,
+    projectCode: technicalRequestCode,
+    projectRequestCode: technicalRequestCode,
 
     portfolioCode: params.portfolio.codigo || params.portfolio.code || params.portfolio.id || "",
     portfolioName: params.portfolio.nombre || params.portfolio.name || params.portfolio.nom || "",
@@ -1411,6 +1429,26 @@ export function createProjectFromPortfolio(params: {
     validacionSolicitada: false,
     estadoValidacionGeneral: "Sin solicitar",
     validaciones: [],
+
+    // SKU codes (from ProductInitialCreateModal)
+    skuCode: (params.initialData as any).skuCode || "",
+    currentSkuCode: (params.initialData as any).currentSkuCode || (params.initialData as any).skuCode || "",
+    productCode: (params.initialData as any).productCode || (params.initialData as any).skuCode || "",
+    codigoSku: (params.initialData as any).codigoSku || (params.initialData as any).skuCode || "",
+    codigoProducto: (params.initialData as any).codigoProducto || (params.initialData as any).skuCode || "",
+    codigoProductoOdiseo: (params.initialData as any).codigoProductoOdiseo || (params.initialData as any).skuCode || "",
+    skuSequence: (params.initialData as any).skuSequence || undefined,
+    skuLifecycleCode: (params.initialData as any).skuLifecycleCode || (params.initialData as any).skuLifecycleCode || "E",
+    skuLifecycleName: (params.initialData as any).skuLifecycleName || "Preliminar",
+    skuVersion: (params.initialData as any).skuVersion || 0,
+
+    // EDAG and EM codes
+    edagCode: (params.initialData as any).edagCode || "",
+    edagSequence: (params.initialData as any).edagSequence || undefined,
+    edagVersion: (params.initialData as any).edagVersion || 0,
+    emCode: (params.initialData as any).emCode || "",
+    emSequence: (params.initialData as any).emSequence || undefined,
+    emVersion: (params.initialData as any).emVersion || 0,
 
     createdAt: now,
     updatedAt: now,

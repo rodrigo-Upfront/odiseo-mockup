@@ -62,6 +62,7 @@ import {
   getAllMaterialLayerOptions,
   type MicronFrontendControl,
 } from "../../../shared/data/productMaterialCatalog";
+import { getSKUCycleLabel } from "../../../shared/utils/productCodeRules";
 
 import FormCard from "../../../shared/components/forms/FormCard";
 import FormInput from "../../../shared/components/forms/FormInput";
@@ -293,6 +294,14 @@ export type ProjectEditFormData = {
 
   licitacion: string;
   designPlanFiles: string[];
+
+  // SKU codes
+  skuCode: string;
+  currentSkuCode: string;
+  productCode: string;
+  skuSequence: string;
+  skuLifecycleCode: string;
+  skuVersion: string;
 };
 
 const YES_NO_OPTIONS = [
@@ -2322,6 +2331,36 @@ const findProductByRouteParam = (
   );
 };
 
+// ============ SKU Validation and Resolution Helpers ============
+
+const SKU_CODE_PATTERN = /^SKU-\d{5}-[EBAI]-\d{2}$/;
+
+function isValidSkuDisplayCode(value: unknown): boolean {
+  return SKU_CODE_PATTERN.test(String(value ?? "").trim().toUpperCase());
+}
+
+function resolveProjectSkuCode(project: ProjectRecord | null | undefined): string {
+  if (!project) return "";
+
+  const source = project as Record<string, unknown>;
+
+  const candidates = [
+    source.skuCode,
+    source.currentSkuCode,
+    source.productCode,
+    source.codigoSku,
+    source.codigoProductoOdiseo,
+    source.codigoProducto,
+    // Don't use source.code as it might be PRJ-...
+  ];
+
+  const validSku = candidates
+    .map((value) => String(value ?? "").trim().toUpperCase())
+    .find((value) => isValidSkuDisplayCode(value));
+
+  return validSku || "";
+}
+
 export default function ProductEditPage() {
   const navigate = useNavigate();
   const { setHeader, resetHeader } = useLayout();
@@ -2524,6 +2563,13 @@ export default function ProductEditPage() {
     additionalComment: "",
     licitacion: "",
     designPlanFiles: [],
+    // SKU codes
+    skuCode: "",
+    currentSkuCode: "",
+    productCode: "",
+    skuSequence: "",
+    skuLifecycleCode: "",
+    skuVersion: "",
   });
 
   const [submitAttempted, setSubmitAttempted] = useState(false);
@@ -2581,6 +2627,31 @@ export default function ProductEditPage() {
   const precutTypeOpt = useMemo(() => getCatalogOptions("precut_type"), []);
   const coreMaterialOpt = useMemo(() => getCatalogOptions("core_material"), []);
 
+  // Resolve and display SKU code
+  const displaySkuCode = useMemo(() => {
+    const fromForm =
+      form.skuCode ||
+      form.currentSkuCode ||
+      form.productCode;
+
+    if (isValidSkuDisplayCode(fromForm)) {
+      return String(fromForm).trim().toUpperCase();
+    }
+
+    const fromOriginal = resolveProjectSkuCode(originalProject);
+
+    if (isValidSkuDisplayCode(fromOriginal)) {
+      return fromOriginal;
+    }
+
+    return "";
+  }, [
+    form.skuCode,
+    form.currentSkuCode,
+    form.productCode,
+    originalProject,
+  ]);
+
   useEffect(() => {
     if (!projectCode) {
       setLoading(false);
@@ -2637,8 +2708,12 @@ if (!project) {
       initialProjectType,
     );
 
+    // Resolve SKU code from multiple possible fields
+    const resolvedSkuCode = resolveProjectSkuCode(project);
+    const skuParts = resolvedSkuCode ? resolvedSkuCode.split("-") : [];
+
     const convertedForm: ProjectEditFormData = {
-      code: project.code || "",
+      code: resolvedSkuCode || project.code || "",
       status: project.status || "",
       portfolioCode: project.portfolioCode || "",
       executiveId: getProjectExecutiveIds(project),
@@ -2864,6 +2939,13 @@ if (!project) {
       additionalComment: resolveInitialComment(project),
       licitacion: toYesNo((project as any).licitacion),
       designPlanFiles: (project as any).designPlanFiles || [],
+      // SKU codes
+      skuCode: (project as any).skuCode || resolvedSkuCode || "",
+      currentSkuCode: (project as any).currentSkuCode || resolvedSkuCode || "",
+      productCode: (project as any).productCode || resolvedSkuCode || "",
+      skuSequence: String((project as any).skuSequence || skuParts[1] || ""),
+      skuLifecycleCode: (project as any).skuLifecycleCode || skuParts[2] || "E",
+      skuVersion: String((project as any).skuVersion || skuParts[3] || ""),
     };
 
     // Apply MOT-based autofill for modified products
@@ -4924,21 +5006,6 @@ if (!project) {
                       rows={2}
                     />
                   </div>
-
-                  {/* ========== RESULTADO CALCULADO ========== */}
-                  {nombreTecnicoCalculado && (
-                    <div className="rounded-xl border border-green-100 bg-green-50/50 p-4 mt-4">
-                      <h4 className="mb-3 border-b border-green-100 pb-2 text-sm font-bold text-green-700">
-                        Resultado
-                      </h4>
-                      <div className="space-y-2">
-                        <PreviewRow
-                          label="Nombre técnico"
-                          value={nombreTecnicoCalculado}
-                        />
-                      </div>
-                    </div>
-                  )}
                 </FormCard>
 
               </div>
@@ -6554,6 +6621,27 @@ if (!project) {
 
               <div className="space-y-2 text-sm">
                 <PreviewRow
+                  label="SKU"
+                  value={displaySkuCode || "—"}
+                />
+
+                {form.skuLifecycleCode && (
+                  <PreviewRow
+                    label="Ciclo de vida"
+                    value={getSKUCycleLabel(form.skuLifecycleCode as any) || "—"}
+                  />
+                )}
+
+                <PreviewRow
+                  label="Nombre de producto"
+                  value={
+                    form.projectName
+                      ? `${form.projectName} ${form.estimatedVolume || ""} ${form.unitOfMeasure || ""}`.trim()
+                      : "—"
+                  }
+                />
+
+                <PreviewRow
                   label="Clasificación"
                   value={
                     isProductoNuevo(form.classification)
@@ -6575,17 +6663,8 @@ if (!project) {
                 />
 
                 <PreviewRow
-                  label="Volumen referencial"
-                  value={
-                    form.estimatedVolume
-                      ? `${form.estimatedVolume} ${form.unitOfMeasure || ""}`
-                      : "—"
-                  }
-                />
-
-                <PreviewRow
-                  label="Acción Salesforce"
-                  value={form.salesforceAction || "—"}
+                  label="Estructura calculada"
+                  value={estructuraCalculada || "—"}
                 />
 
                 {form.printClass && (
