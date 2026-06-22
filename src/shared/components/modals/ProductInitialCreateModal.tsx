@@ -16,7 +16,6 @@ import * as projectStorage from "../../data/projectStorage";
 import * as userStorage from "../../data/userStorage";
 import { getAllApprovedProducts } from "../../data/approvedProductStorage";
 
-import { UNITS_OF_MEASURE, UNIT_LABELS, UNIT_NORMALIZATION_MAP } from "../../data/unitOfMeasureStorage";
 import { getCatalogOptions } from "../../catalogs";
 import { PRODUCT_CATALOGS, getModificationOptionsByClassification } from "../../data/productCatalogs";
 import {
@@ -24,6 +23,10 @@ import {
   getActiveModificationOptionsByClassification,
   normalizeProductClassificationToCatalog,
 } from "../../data/productModificationCatalog";
+import {
+  getActiveUnitMeasureOptions,
+  normalizeUnitMeasureCode,
+} from "../../data/unitMeasureCatalog";
 import {
   requiresOriginProduct,
   getAllowedOriginLifecycle,
@@ -175,12 +178,7 @@ const formatLayerForTechnicalName = (material: string, micron?: string): string 
   return `${label} ${micron} µ`;
 };
 
-const getUnitOptions = () => UNITS_OF_MEASURE.map((unit) => ({
-  value: unit,
-  label: (UNIT_LABELS as Record<string, string>)[unit] || unit,
-}));
-
-const UNIT_OPTIONS = getUnitOptions();
+const UNIT_OPTIONS = getActiveUnitMeasureOptions();
 
 const normalizeText = (value: unknown): string =>
   String(value ?? "")
@@ -888,10 +886,10 @@ const normalizeMaterialValue = (value: unknown): string => {
   return entry ? normalizeText(entry[0]) : normalized;
 };
 
-// UNIT_NORMALIZATION_MAP ahora se importa desde unitOfMeasureStorage (única fuente oficial)
+// Normalizar valor de unidad usando el catálogo TABUNIMEDODISEO
 const normalizeUnitValue = (value: string): string => {
-  const normalized = normalizeText(value).toUpperCase();
-  return (UNIT_NORMALIZATION_MAP as Record<string, string>)[normalized] || normalized;
+  const normalized = normalizeUnitMeasureCode(value);
+  return normalized || normalizeText(value).toUpperCase();
 };
 
 const parseMicronNumber = (value: string | undefined): number | null => {

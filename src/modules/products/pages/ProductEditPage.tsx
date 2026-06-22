@@ -49,7 +49,10 @@ import {
   normalizeFormatPlan,
   type DimensionRange,
 } from "../../../shared/data/dimensionRestrictionRules";
-import { normalizeUnit, UNITS_OF_MEASURE, UNIT_LABELS } from "../../../shared/data/unitOfMeasureStorage";
+import {
+  getActiveUnitMeasureOptions,
+  normalizeUnitMeasureCode,
+} from "../../../shared/data/unitMeasureCatalog";
 
 import FormCard from "../../../shared/components/forms/FormCard";
 import FormInput from "../../../shared/components/forms/FormInput";
@@ -1368,19 +1371,9 @@ function getMaterialTypeForSummary(materialValue: string): string {
 
   return materialValue;
 }
-// Unidad de Medida - consolidado desde PRODUCT_CATALOGS (única fuente oficial)
-const UNIT_OPTIONS = (PRODUCT_CATALOGS.unidadDeMedida as unknown as Array<{ code: string; label: string }>).map(
-  (item) => ({
-    value: item.code,
-    label: item.label,
-  })
-);
-
-// Moment 1 unit options (from modal)
-const UNIT_OPTIONS_MOMENT1 = UNITS_OF_MEASURE.map((unit) => ({
-  value: unit,
-  label: (UNIT_LABELS as Record<string, string>)[unit] || unit,
-}));
+// Unidad de Medida - desde TABUNIMEDODISEO (única fuente oficial)
+const UNIT_OPTIONS = getActiveUnitMeasureOptions();
+const UNIT_OPTIONS_MOMENT1 = UNIT_OPTIONS;
 
 const PRINT_CLASS_OPTIONS = [
   { value: "Flexo", label: "Flexo" },
@@ -4064,8 +4057,8 @@ if (!project) {
       estimatedVolume: form.estimatedVolume,
       volumenReferencial: form.estimatedVolume,
       volumenCantidadReferencial: form.estimatedVolume,
-      unitOfMeasure: normalizeUnit(form.unitOfMeasure),
-      unidad: normalizeUnit(form.unitOfMeasure),
+      unitOfMeasure: normalizeUnitMeasureCode(form.unitOfMeasure),
+      unidad: normalizeUnitMeasureCode(form.unitOfMeasure),
 
       // LÁMINA guided format fields
       tipoFormatoLamina: form.tipoFormatoLamina || "",
@@ -4368,8 +4361,8 @@ if (!project) {
       estimatedVolume: form.estimatedVolume,
       volumenReferencial: form.estimatedVolume,
       volumenCantidadReferencial: form.estimatedVolume,
-      unitOfMeasure: normalizeUnit(form.unitOfMeasure),
-      unidad: normalizeUnit(form.unitOfMeasure),
+      unitOfMeasure: normalizeUnitMeasureCode(form.unitOfMeasure),
+      unidad: normalizeUnitMeasureCode(form.unitOfMeasure),
 
       // LÁMINA guided format fields
       tipoFormatoLamina: form.tipoFormatoLamina || "",
