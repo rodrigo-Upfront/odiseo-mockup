@@ -62,6 +62,12 @@ export type CatalogEDAG = {
   colorObjective?: string;
 };
 
+export type CatalogTechnicalApplication = {
+  id: number;
+  code: string;
+  name: string;
+};
+
 export const STATUS_CATALOG: CatalogStatus[] = [
   { id: 1, code: "REG", name: "Registrado" },
   { id: 2, code: "REV", name: "En revisión" },
@@ -3988,6 +3994,56 @@ export const PACKING_MACHINES_CATALOG: CatalogPackingMachine[] = [
     name: "Laminadora / Conversión",
     wrappingId: 3,
   },
+];
+
+export const TECHNICAL_APPLICATION_CATALOG: CatalogTechnicalApplication[] = [
+  { id: 1, code: "SECO", name: "SECO" },
+  { id: 2, code: "PASTOSO", name: "PASTOSO" },
+  { id: 3, code: "LIQUIDO", name: "LIQUIDO" },
+  { id: 4, code: "GALLETAS", name: "GALLETAS" },
+  { id: 5, code: "FIDEOS", name: "FIDEOS" },
+  { id: 6, code: "CERA_PASTA", name: "CERA EN PASTA" },
+  { id: 7, code: "CONDIMENTOS", name: "KETCHUP,MAYON,MOST" },
+  { id: 8, code: "PROD_COMESTIBLES", name: "PROD-COMESTIBLES" },
+  { id: 9, code: "PROD_NO_COMESTIBLES", name: "PROD-NO COMESTIBLES" },
+  { id: 10, code: "ARROZ_MENESTRAS", name: "ARROZ Y MENESTRAS" },
+  { id: 11, code: "CEREALES", name: "CEREALES" },
+  { id: 12, code: "SNACKS", name: "SNACKS" },
+  { id: 13, code: "HARINAS", name: "HARINAS" },
+  { id: 14, code: "DETERGENTE", name: "DETERGENTE" },
+  { id: 15, code: "JABON", name: "JABON" },
+  { id: 16, code: "FERTILIZANTE", name: "FERTILIZANTE" },
+  { id: 17, code: "POSTRES_POLVO", name: "POSTRES EN POLVO" },
+  { id: 18, code: "REFRESCOS_POLVO", name: "REFRESCOS EN POLVO" },
+  { id: 19, code: "COCOA", name: "COCOA" },
+  { id: 20, code: "LECHE", name: "LECHE" },
+  { id: 21, code: "HELADOS", name: "HELADOS" },
+  { id: 22, code: "QUESOS", name: "QUESOS" },
+  { id: 23, code: "MEZCLAS_SECAS", name: "MEZCLAS SECAS" },
+  { id: 24, code: "CAFE_SOLUBLE", name: "CAFE SOLUBLE" },
+  { id: 25, code: "EMBUTIDOS", name: "EMBUTIDOS" },
+  { id: 26, code: "OTRO_ALIMENTARIO", name: "OTRO ALIMENTARIO" },
+  { id: 27, code: "OTRO_NO_ALIMENTARIO", name: "OTRO NO ALIMENTARIO" },
+  { id: 28, code: "CHAMPU", name: "CHAMPU" },
+  { id: 29, code: "MERMELADA", name: "MERMELADA" },
+  { id: 30, code: "QUESO_CREMA", name: "QUESO CREMA" },
+  { id: 31, code: "MARGARINA_MANTEQUILLA", name: "MARGARINA MANTEQUILL" },
+  { id: 32, code: "CERAS_LIMPIADORES", name: "CERAS Y LIMPIADORES" },
+  { id: 33, code: "JUGOS", name: "JUGOS" },
+  { id: 34, code: "DETERGENTES", name: "DETERGENTES" },
+  { id: 35, code: "FIDEOS_GRANEL", name: "FIDEOS A GRANEL" },
+  { id: 36, code: "FIDEOS_CORTOS", name: "FIDEOS CORTOS" },
+  { id: 37, code: "FIDEOS_LARGOS", name: "FIDEOS LARGOS" },
+  { id: 38, code: "FIDEOS_BLOQUE", name: "FIDEOS EN BLOQUE" },
+  { id: 39, code: "DETERGENTE_ESCAMAS", name: "DETERGENTE ESCAMAS" },
+  { id: 40, code: "DETERGENTE_POLVO", name: "DETERGENTE EN POLVO" },
+  { id: 41, code: "ACEITES", name: "ACEITES" },
+  { id: 42, code: "ACEITE_OLIVA", name: "ACEITE DE OLIVA" },
+  { id: 43, code: "ACEITE_COCINA", name: "ACEITE PARA COCINA" },
+  { id: 44, code: "VINAGRE", name: "VINAGRE" },
+  { id: 45, code: "ALIM_BALANCEADOS", name: "ALIM. BALANCEADOS" },
+  { id: 46, code: "OTROS", name: "OTROS" },
+  { id: 47, code: "CONTACTO_INDIRECTO", name: "CONTACTO INDIRECTO" },
 ];
 
 export const EDAG_CATALOG: CatalogEDAG[] = [

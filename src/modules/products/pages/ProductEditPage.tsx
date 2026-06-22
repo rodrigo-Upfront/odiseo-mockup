@@ -26,7 +26,7 @@ import {
 } from "../../../shared/data/projectWorkflow";
 import { getActiveExecutiveRecords } from "../../../shared/data/executiveStorage";
 import { getActiveUsers } from "../../../shared/data/userStorage";
-import { getEdagByCodeAndVersion } from "../../../shared/data/mockDatabase";
+import { getEdagByCodeAndVersion, TECHNICAL_APPLICATION_CATALOG } from "../../../shared/data/mockDatabase";
 import { isGenericPackingMachine } from "../../../shared/utils/validationUtils";
 import {
   isGuidedFormatEnabled,
@@ -4977,13 +4977,17 @@ if (!project) {
 
                   {/* ========== APLICACIÓN TÉCNICA Y CÓDIGO DE EMPAQUE ========== */}
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2 mt-4">
-                    <FormInput
+                    <FormSelect
                       label="Aplicación Técnica *"
                       value={form.technicalApplication || ""}
                       onChange={(value) => updateField("technicalApplication", value)}
                       onBlur={() => markFieldAsTouched("technicalApplication")}
                       error={getError("technicalApplication")}
-                      placeholder="Ej. Empaque flexible, Envase rígido"
+                      placeholder="-- Seleccione --"
+                      options={TECHNICAL_APPLICATION_CATALOG.map((item) => ({
+                        value: item.code,
+                        label: item.name,
+                      }))}
                     />
 
                     <FormInput
