@@ -2926,10 +2926,10 @@ const handleRemoveLastLayer = () => {
 
           // EDAG y EM
           edagCode,
-          edagSequence: 60000 + allProjects.length,
+          edagSequence: 60000 + sourceRecords.length,
           edagVersion: 0,
           emCode,
-          emSequence: 50000 + allProjects.length,
+          emSequence: 50000 + sourceRecords.length,
           emVersion: 0,
 
           // CORRECCIÓN: Classification depende de motivo
@@ -3093,8 +3093,8 @@ const handleRemoveLastLayer = () => {
 
       onProjectCreated?.(createdProjectCode);
       onClose();
-      // Navegar directamente a la página de edición del producto creado
-      navigate(`/products/${createdProjectCode}/edit`);
+      // Navegar a la lista de productos
+      navigate("/products");
     } catch (error) {
       addStep(`✗ Error durante la creación: ${error}`);
       console.error("[ODISEO] Error creating project:", error);
