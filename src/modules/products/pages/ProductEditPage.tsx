@@ -26,7 +26,7 @@ import {
 } from "../../../shared/data/projectWorkflow";
 import { getActiveExecutiveRecords } from "../../../shared/data/executiveStorage";
 import { getActiveUsers } from "../../../shared/data/userStorage";
-import { getEdagByCodeAndVersion, TECHNICAL_APPLICATION_CATALOG } from "../../../shared/data/mockDatabase";
+import { getEdagByCodeAndVersion, TECHNICAL_APPLICATION_CATALOG, MATERIAL_PACKAGING_CATALOG } from "../../../shared/data/mockDatabase";
 import { isGenericPackingMachine } from "../../../shared/utils/validationUtils";
 import {
   isGuidedFormatEnabled,
@@ -6607,12 +6607,10 @@ if (!project) {
                       }}
                       onBlur={() => markFieldAsTouched("materialPackaging")}
                       error={getError("materialPackaging")}
-                      options={[
-                        { value: "Caja de cartón", label: "Caja de cartón" },
-                        { value: "Bolsa de polietileno", label: "Bolsa de polietileno" },
-                        { value: "Film retráctil", label: "Film retráctil" },
-                        { value: "Pallet", label: "Pallet" },
-                      ]}
+                      options={MATERIAL_PACKAGING_CATALOG.map((item) => ({
+                        value: item.code,
+                        label: item.name,
+                      }))}
                       placeholder="-- Seleccione --"
                     />
 

@@ -68,6 +68,12 @@ export type CatalogTechnicalApplication = {
   name: string;
 };
 
+export type CatalogMaterialPackaging = {
+  id: number;
+  code: string;
+  name: string;
+};
+
 export const STATUS_CATALOG: CatalogStatus[] = [
   { id: 1, code: "REG", name: "Registrado" },
   { id: 2, code: "REV", name: "En revisión" },
@@ -3994,6 +4000,13 @@ export const PACKING_MACHINES_CATALOG: CatalogPackingMachine[] = [
     name: "Laminadora / Conversión",
     wrappingId: 3,
   },
+];
+
+export const MATERIAL_PACKAGING_CATALOG: CatalogMaterialPackaging[] = [
+  { id: 1, code: "C2", name: "C2. Bolsa, Protector de Tuco" },
+  { id: 2, code: "C4", name: "C4. Bolsa" },
+  { id: 3, code: "C7", name: "C7. Manga" },
+  { id: 4, code: "S1", name: "S1. Bls. PEBD, Sobreempaque sacos PEBD" },
 ];
 
 export const TECHNICAL_APPLICATION_CATALOG: CatalogTechnicalApplication[] = [
