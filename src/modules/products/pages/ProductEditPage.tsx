@@ -6632,18 +6632,6 @@ if (!project) {
                   value={displaySkuCode || "—"}
                 />
 
-                <div className="py-2">
-                  <div className="text-xs font-semibold text-slate-600 mb-1">Estado ODISEO</div>
-                  <ProductOdiseoStatusBadge status={odiseoStatus} />
-                </div>
-
-                {form.skuLifecycleCode && (
-                  <PreviewRow
-                    label="Ciclo de vida"
-                    value={getSKUCycleLabel(form.skuLifecycleCode as any) || "—"}
-                  />
-                )}
-
                 <PreviewRow
                   label="Nombre de producto"
                   value={
