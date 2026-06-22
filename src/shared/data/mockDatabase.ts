@@ -49,6 +49,19 @@ export type CatalogPackingMachine = {
   wrappingId: number;
 };
 
+export type CatalogEDAG = {
+  id: number;
+  code: string;
+  version: string;
+  name: string;
+  description?: string;
+  printClass?: string;
+  printType?: string;
+  printForm?: string;
+  blueprintFormat?: string;
+  colorObjective?: string;
+};
+
 export const STATUS_CATALOG: CatalogStatus[] = [
   { id: 1, code: "REG", name: "Registrado" },
   { id: 2, code: "REV", name: "En revisión" },
@@ -3977,6 +3990,45 @@ export const PACKING_MACHINES_CATALOG: CatalogPackingMachine[] = [
   },
 ];
 
+export const EDAG_CATALOG: CatalogEDAG[] = [
+  {
+    id: 1,
+    code: "EDAG-000001",
+    version: "01",
+    name: "Diseño Pouch Galletas",
+    description: "Diseño estándar para pouch de galletas",
+    printClass: "4 colores",
+    printType: "Rotograbado",
+    printForm: "Cilindro",
+    blueprintFormat: "Digital",
+    colorObjective: "PMS 200C",
+  },
+  {
+    id: 2,
+    code: "EDAG-000002",
+    version: "01",
+    name: "Diseño Bolsa Bebida",
+    description: "Diseño para bolsa de bebida",
+    printClass: "2 colores",
+    printType: "Flexografía",
+    printForm: "Placa",
+    blueprintFormat: "Digital",
+    colorObjective: "PMS 279C",
+  },
+  {
+    id: 3,
+    code: "EDAG-000003",
+    version: "02",
+    name: "Diseño Lámina Medicina",
+    description: "Diseño para lámina de medicina",
+    printClass: "6 colores",
+    printType: "Huecograbado",
+    printForm: "Cilindro",
+    blueprintFormat: "Papel",
+    colorObjective: "PMS 185C",
+  },
+];
+
 export function getStatusById(id: number) {
   return STATUS_CATALOG.find((item) => item.id === id);
 }
@@ -4008,5 +4060,11 @@ export function getPackingMachineById(id: number) {
 export function getPackingMachinesByWrappingId(wrappingId: number) {
   return PACKING_MACHINES_CATALOG.filter(
     (machine) => machine.wrappingId === wrappingId
+  );
+}
+
+export function getEdagByCodeAndVersion(code: string, version: string): CatalogEDAG | undefined {
+  return EDAG_CATALOG.find(
+    (edag) => edag.code === code && edag.version === version
   );
 }

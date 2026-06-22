@@ -26,6 +26,7 @@ import {
 } from "../../../shared/data/projectWorkflow";
 import { getActiveExecutiveRecords } from "../../../shared/data/executiveStorage";
 import { getActiveUsers } from "../../../shared/data/userStorage";
+import { getEdagByCodeAndVersion } from "../../../shared/data/mockDatabase";
 import { isGenericPackingMachine } from "../../../shared/utils/validationUtils";
 import {
   isGuidedFormatEnabled,
@@ -5085,11 +5086,20 @@ if (!project) {
                                 </div>
                                 <button
                                   type="button"
-                                  className="h-10 rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 transition-colors whitespace-nowrap"
+                                  className="h-10 rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                                   onClick={() => {
-                                    // Placeholder para la acción de consultar SI
-                                    console.log("Consultar SI:", form.edagCode);
+                                    const edagData = getEdagByCodeAndVersion(form.edagCode, form.edagVersion);
+                                    if (edagData) {
+                                      if (edagData.printClass) updateField("printClass", edagData.printClass);
+                                      if (edagData.printType) updateField("printType", edagData.printType);
+                                      if (edagData.printForm) updateField("printForm", edagData.printForm);
+                                      if (edagData.blueprintFormat) updateField("blueprintFormat", edagData.blueprintFormat);
+                                      if (edagData.colorObjective) updateField("colorObjective", edagData.colorObjective);
+                                    } else {
+                                      alert(`No se encontró EDAG ${form.edagCode} versión ${form.edagVersion}`);
+                                    }
                                   }}
+                                  disabled={!form.edagCode || !form.edagVersion}
                                 >
                                   Consultar SI
                                 </button>
