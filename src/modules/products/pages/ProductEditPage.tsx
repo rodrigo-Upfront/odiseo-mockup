@@ -5073,18 +5073,19 @@ if (!project) {
                                 disabled={form.printClass === "Sin impresión"}
                               />
 
-                              <FormInput
-                                label="Versión EDAG"
-                                value={form.edagVersion}
-                                onChange={(value) => updateField("edagVersion", value)}
-                                placeholder="Ej. 01"
-                                disabled={form.printClass === "Sin impresión"}
-                              />
-
-                              <div className="flex flex-col justify-end">
+                              <div className="flex gap-2 items-end">
+                                <div className="flex-1">
+                                  <FormInput
+                                    label="Versión EDAG"
+                                    value={form.edagVersion}
+                                    onChange={(value) => updateField("edagVersion", value)}
+                                    placeholder="Ej. 01"
+                                    disabled={form.printClass === "Sin impresión"}
+                                  />
+                                </div>
                                 <button
                                   type="button"
-                                  className="h-10 rounded-lg border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+                                  className="h-10 rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 transition-colors whitespace-nowrap"
                                   onClick={() => {
                                     // Placeholder para la acción de consultar SI
                                     console.log("Consultar SI:", form.edagCode);
