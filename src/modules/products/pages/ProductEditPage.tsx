@@ -5427,27 +5427,6 @@ if (!project) {
                   })()}
                 </FormCard>
 
-                {/* ¿Tiene plano de diseño? */}
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                  <FormSelect
-                    label="¿Tiene plano de diseño? *"
-                    value={form.hasDesignPlan}
-                    onChange={(value) => {
-                      updateField("hasDesignPlan", value);
-                      if (value === "No") {
-                        updateField("designPlanType", "");
-                        updateField("designPlanFiles", []);
-                        updateField("designPlanComments", "");
-                      }
-                      markFieldAsTouched("hasDesignPlan");
-                    }}
-                    onBlur={() => markFieldAsTouched("hasDesignPlan")}
-                    error={getError("hasDesignPlan")}
-                    placeholder="-- Seleccione --"
-                    options={YES_NO_OPTIONS}
-                  />
-                </div>
-
                 <FormCard title="Información técnica de diseño" icon="🎨" color="#00395A">
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <FormSelect
@@ -5530,11 +5509,35 @@ if (!project) {
                   </div>
                 </FormCard>
 
-                {form.hasDesignPlan === "Sí" && (
-                  <FormCard title="Carga de planos de diseño" icon="📎" color="#00395A" required>
-                    <div className="space-y-4">
-                      <FormSelect
-                        label="Tipo de plano *"
+                <FormCard
+                  title="Carga de planos de diseño"
+                  icon="📎"
+                  color="#00395A"
+                  required={form.hasDesignPlan === "Sí"}
+                >
+                  <div className="space-y-4">
+                    <FormSelect
+                      label="¿Tiene plano de diseño? *"
+                      value={form.hasDesignPlan}
+                      onChange={(value) => {
+                        updateField("hasDesignPlan", value);
+                        if (value === "No") {
+                          updateField("designPlanType", "");
+                          updateField("designPlanFiles", []);
+                          updateField("designPlanComments", "");
+                        }
+                        markFieldAsTouched("hasDesignPlan");
+                      }}
+                      onBlur={() => markFieldAsTouched("hasDesignPlan")}
+                      error={getError("hasDesignPlan")}
+                      placeholder="-- Seleccione --"
+                      options={YES_NO_OPTIONS}
+                    />
+
+                    {form.hasDesignPlan === "Sí" && (
+                      <>
+                        <FormSelect
+                          label="Tipo de plano *"
                         value={form.designPlanType}
                         onChange={(value) => {
                           updateField("designPlanType", value);
@@ -5586,9 +5589,10 @@ if (!project) {
                           placeholder="Indicar por qué no se envía archivo de arte con WebCenter..."
                         />
                       )}
-                    </div>
-                  </FormCard>
-                )}
+                      </>
+                    )}
+                  </div>
+                </FormCard>
 
                 {/* BLOQUE: VISTA PREVIA DEL PLANO DIMENSIONAL */}
                 {canEditDesign && (
