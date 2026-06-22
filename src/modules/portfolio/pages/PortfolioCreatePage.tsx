@@ -799,17 +799,6 @@ useEffect(() => {
                   }
                   placeholder="Escribe para buscar ejecutivo..."
                 />
-
-                <FormSelect
-                  label="Estado del Portafolio"
-                  value={form.estadoId}
-                  onChange={(value) => updateField("estadoId", value)}
-                  options={getStatusCatalog().map((status) => ({
-                    value: String(status.id),
-                    label: status.name,
-                  }))}
-                  placeholder="-- Seleccione --"
-                />
               </div>
             </SectionCard>
 
