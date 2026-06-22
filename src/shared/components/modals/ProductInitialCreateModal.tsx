@@ -1572,6 +1572,13 @@ const getSkuSourceRecords = (): Array<Record<string, unknown>> => {
   ];
 };
 
+const canRunSimilaritySearch = (
+  classification: string,
+  causalValues: string[],
+): boolean => {
+  return isProductoNuevo(classification) && isNuevaEstructura(causalValues);
+};
+
 // Factory function para crear la función hydrateFromBaseProduct
 // con acceso a los setters del componente
 const createHydrateFunction = (setters: any) => {
@@ -1799,6 +1806,8 @@ const [visibleLayerCount, setVisibleLayerCount] = useState(1);
   const mustUseCurrentSku = shouldRequireCurrentSku(motivo, causal);
 
   const canModifyLayerStructure = isProductoNuevo(motivo) && isNuevaEstructura(causal);
+
+  const shouldShowSimilaritySearch = canRunSimilaritySearch(motivo, causal);
 
   const isPortfolioLocked = Boolean(propPortfolio || initialPortfolioCode);
 
@@ -2067,7 +2076,10 @@ const nombreTecnicoCalculado = useMemo(() => {
 
   const hasMaterialsForSimilarity = [layer1, layer2, layer3, layer4].some(Boolean);
 
-  const hasMinDataForSimilarity = requiredBaseFieldsFilled && hasMaterialsForSimilarity;
+  const hasMinDataForSimilarity =
+    shouldShowSimilaritySearch &&
+    requiredBaseFieldsFilled &&
+    hasMaterialsForSimilarity;
 
   const hasMinDataForSearch = hasMinDataForSimilarity;
 
@@ -2157,6 +2169,14 @@ const nombreTecnicoCalculado = useMemo(() => {
   }, []);
 
   useEffect(() => {
+    if (!shouldShowSimilaritySearch) {
+      setSimilarityMatches([]);
+      setSelectedReference(null);
+      setPreviewProject(null);
+    }
+  }, [shouldShowSimilaritySearch]);
+
+  useEffect(() => {
     if (!layer1) {
       setLayer2("");
       setLayer3("");
@@ -2190,8 +2210,9 @@ const nombreTecnicoCalculado = useMemo(() => {
   ]);
 
   useEffect(() => {
-    if (!hasMinDataForSearch) {
+    if (!shouldShowSimilaritySearch || !hasMinDataForSearch) {
       setSimilarityMatches([]);
+      setSelectedReference(null);
       return;
     }
 
@@ -2220,7 +2241,7 @@ const nombreTecnicoCalculado = useMemo(() => {
       unidad,
     };
 
-    const allowOtherClients = causal.includes("Nueva estructura");
+    const allowOtherClients = true;
 
     if (DEBUG_PROJECT_SIMILARITY) {
       const all = projectsForSimilarity;
@@ -2266,6 +2287,7 @@ const nombreTecnicoCalculado = useMemo(() => {
 
     setSimilarityMatches(results);
   }, [
+    shouldShowSimilaritySearch,
     hasMinDataForSearch,
     projectsForSimilarity,
     inheritedClientCode,
@@ -2329,7 +2351,7 @@ const nombreTecnicoCalculado = useMemo(() => {
 
 
   const projectsPassingMandatoryFilter = useMemo(() => {
-    if (!hasMinDataForSearch) return 0;
+    if (!shouldShowSimilaritySearch || !hasMinDataForSearch) return 0;
 
     const candidateData = {
       clientCode: inheritedClientCode || resolvedSelectedClient.code,
@@ -2343,11 +2365,12 @@ const nombreTecnicoCalculado = useMemo(() => {
       causal,
     };
 
-    const allowOtherClients = causal.includes("Nueva estructura");
+    const allowOtherClients = true;
     return projectsForSimilarity.filter((project) =>
       doesProjectPassMandatoryFilter(candidateData, project, allowOtherClients),
     ).length;
   }, [
+    shouldShowSimilaritySearch,
     hasMinDataForSearch,
     projectsForSimilarity,
     inheritedClientCode,
@@ -2359,6 +2382,7 @@ const nombreTecnicoCalculado = useMemo(() => {
     envoltura,
     usoFinal,
     maquinaCliente,
+    motivo,
     causal,
   ]);
 
@@ -4014,7 +4038,7 @@ const handleRemoveLastLayer = () => {
                 )}
               </div>
 
-              {requiredBaseFieldsFilled && !hasMaterialsForSimilarity && (
+              {shouldShowSimilaritySearch && requiredBaseFieldsFilled && !hasMaterialsForSimilarity && (
                 <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
                   <div className="mb-3 flex items-start gap-2">
                     <Info size={16} className="mt-0.5 flex-shrink-0 text-slate-500" />
@@ -4026,7 +4050,7 @@ const handleRemoveLastLayer = () => {
                 </div>
               )}
 
-              {requiredBaseFieldsFilled && hasMaterialsForSimilarity && !topMatch && (
+              {shouldShowSimilaritySearch && requiredBaseFieldsFilled && hasMaterialsForSimilarity && !topMatch && (
                 <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
                   <div className="mb-3 flex items-start gap-2">
                     <Info size={16} className="mt-0.5 flex-shrink-0 text-slate-500" />
@@ -4047,7 +4071,7 @@ const handleRemoveLastLayer = () => {
                 </div>
               )}
 
-              {hasMinDataForSearch && topMatch && topScore >= 50 && (
+              {shouldShowSimilaritySearch && hasMinDataForSearch && topMatch && topScore >= 50 && (
                 <div
                   className={[
                     "rounded-xl border p-4",
@@ -4156,7 +4180,7 @@ const handleRemoveLastLayer = () => {
                 </div>
               )}
 
-              {selectedReference && (
+              {shouldShowSimilaritySearch && selectedReference && (
                 <div className="rounded-xl border border-green-200 bg-green-50 p-4">
                   <div className="mb-3 flex items-start justify-between gap-3">
                     <div>
@@ -4243,7 +4267,7 @@ const handleRemoveLastLayer = () => {
         )}
       </div>
 
-      {previewProject && (
+      {shouldShowSimilaritySearch && previewProject && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 px-4 py-6">
           <div className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
             <div className="flex items-start justify-between border-b border-slate-100 px-6 py-4">
