@@ -5080,6 +5080,19 @@ if (!project) {
                                 placeholder="Ej. 01"
                                 disabled={form.printClass === "Sin impresión"}
                               />
+
+                              <div className="flex flex-col justify-end">
+                                <button
+                                  type="button"
+                                  className="h-10 rounded-lg border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+                                  onClick={() => {
+                                    // Placeholder para la acción de consultar SI
+                                    console.log("Consultar SI:", form.edagCode);
+                                  }}
+                                >
+                                  Consultar SI
+                                </button>
+                              </div>
                             </>
                           )}
                         </div>
