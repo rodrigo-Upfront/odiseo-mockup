@@ -4975,6 +4975,27 @@ if (!project) {
                     />
                   </div>
 
+                  {/* ========== APLICACIÓN TÉCNICA Y CÓDIGO DE EMPAQUE ========== */}
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2 mt-4">
+                    <FormInput
+                      label="Aplicación Técnica *"
+                      value={form.technicalApplication || ""}
+                      onChange={(value) => updateField("technicalApplication", value)}
+                      onBlur={() => markFieldAsTouched("technicalApplication")}
+                      error={getError("technicalApplication")}
+                      placeholder="Ej. Empaque flexible, Envase rígido"
+                    />
+
+                    <FormInput
+                      label="Código de Empaque del Cliente (Opcional)"
+                      value={form.customerPackingCode || ""}
+                      onChange={(value) => updateField("customerPackingCode", value)}
+                      onBlur={() => markFieldAsTouched("customerPackingCode")}
+                      error={getError("customerPackingCode")}
+                      placeholder="Ej. SKU-CLIENT-001"
+                    />
+                  </div>
+
                   {/* ========== DESCRIPCIÓN BREVE ========== */}
                   <div className="space-y-1 mt-4">
                     <label className="block text-xs font-bold uppercase tracking-wide text-slate-600">
