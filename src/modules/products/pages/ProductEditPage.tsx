@@ -53,6 +53,15 @@ import {
   getActiveUnitMeasureOptions,
   normalizeUnitMeasureCode,
 } from "../../../shared/data/unitMeasureCatalog";
+import {
+  getActiveMaterialGroupOptions,
+  getMaterialLayerOptionsByGroup,
+  getMicronFrontendControl,
+  resolveMaterialLayer,
+  buildLayerTechnicalSnapshot,
+  getAllMaterialLayerOptions,
+  type MicronFrontendControl,
+} from "../../../shared/data/productMaterialCatalog";
 
 import FormCard from "../../../shared/components/forms/FormCard";
 import FormInput from "../../../shared/components/forms/FormInput";
@@ -1300,9 +1309,28 @@ function getBlueprintFormatOptions(wrapping: string | undefined): Array<{ value:
 
 function extractMaterialGroupFromValue(materialValue: string): string {
   if (!materialValue) return "";
+  // Try to resolve from catalog using TbMatCapCod
+  const material = resolveMaterialLayer(materialValue);
+  if (material) return material.TbMatCapGmp;
+  // Fallback to old format (for backward compatibility)
   const group = materialValue.split(" - ")[0];
   return Object.keys(MATERIAL_CATALOG).includes(group) ? group : "";
 }
+
+// Use getAllMaterialLayerOptions from catalog
+const MATERIAL_LAYER_OPTIONS = getAllMaterialLayerOptions().map(m => ({
+  value: m.code,
+  label: m.materialName,
+}));
+
+type LayerNumber = 1 | 2 | 3 | 4;
+
+const getLayerFieldNames = (layer: LayerNumber) => ({
+  materialGroup: `layer${layer}MaterialGroup` as keyof ProjectEditFormData,
+  material: `layer${layer}Material` as keyof ProjectEditFormData,
+  micron: `layer${layer}Micron` as keyof ProjectEditFormData,
+  grammage: `layer${layer}Grammage` as keyof ProjectEditFormData,
+});
 
 const STRUCTURE_FIXED_GRAMMAGE: Record<string, number> = {
   Monocapa: 2.5,
@@ -3015,7 +3043,7 @@ if (!project) {
       const moment1Label = getMaterialLabel(material);
       if (moment1Label && moment1Label !== material) {
         if (!micron) return moment1Label;
-        return `${moment1Label} ${micron} µ`;
+        return `${moment1Label} ${micron} µm`;
       }
 
       // Fallback to Moment 2+ material catalog (MATERIAL_CATALOG)
@@ -3024,7 +3052,7 @@ if (!project) {
         .find(m => m.value === material || m.label === material);
       const label = entry?.label || material;
       if (!micron) return label;
-      return `${label} ${micron} µ`;
+      return `${label} ${micron} µm`;
     };
 
     const capasStr = [
@@ -5850,15 +5878,15 @@ if (!project) {
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                         {(() => {
                           return [1, 2, 3, 4].filter(layer => layer <= visibleLayerCount).map((layer) => {
-                            const groupKey = `layer${layer}MaterialGroup` as keyof ProjectEditFormData;
                             const materialKey = `layer${layer}Material` as keyof ProjectEditFormData;
                             const micronKey = `layer${layer}Micron` as keyof ProjectEditFormData;
                             const grammageKey = `layer${layer}Grammage` as keyof ProjectEditFormData;
+                            const groupKey = `layer${layer}MaterialGroup` as keyof ProjectEditFormData;
 
-                            const group = form[groupKey] as string;
-                            const groupOptions = group ? MATERIAL_CATALOG[group] : [];
-                            const selectedMaterial = group ? MATERIAL_CATALOG[group]?.find(m => m.value === form[materialKey]) : null;
-                            const isMicronFree = selectedMaterial?.isFree ?? false;
+                            const selectedMaterialCode = form[materialKey] as string;
+                            const selectedMicron = form[micronKey] as string;
+                            const micronControl = getMicronFrontendControl(selectedMaterialCode);
+                            const selectedMaterial = resolveMaterialLayer(selectedMaterialCode);
 
                             return (
                               <div key={layer} className="rounded-lg border border-slate-200 bg-white p-4">
@@ -5867,35 +5895,19 @@ if (!project) {
                                 </p>
                                 <div className="space-y-3">
                                   <FormSelect
-                                    label="Grupo Materia Prima *"
-                                    value={group}
-                                    onChange={(value) => {
-                                      updateField(groupKey, value);
-                                      updateField(materialKey, "");
-                                      updateField(micronKey, "");
-                                      updateField(grammageKey, "");
-                                      markFieldAsTouched(groupKey);
-                                    }}
-                                    onBlur={() => markFieldAsTouched(groupKey)}
-                                    error={getError(groupKey)}
-                                    placeholder="-- Seleccione grupo --"
-                                    options={MATERIAL_GROUP_OPTIONS}
-                                    disabled={!canEditStructure}
-                                  />
-                                  <FormSelect
-                                    label="Tipo de Materia Prima *"
-                                    value={form[materialKey] as string}
+                                    label="Tipo de material por capa *"
+                                    value={selectedMaterialCode}
                                     onChange={(value) => {
                                       updateField(materialKey, value);
+                                      updateField(micronKey, "");
+                                      updateField(grammageKey, "");
 
-                                      const entry = MATERIAL_CATALOG[group]?.find((m) => m.value === value);
-
-                                      if (entry && !entry.isFree) {
-                                        updateField(micronKey, entry.micron);
-                                        updateField(grammageKey, entry.grammage);
-                                      } else {
-                                        updateField(micronKey, "");
-                                        updateField(grammageKey, "");
+                                      // Update group internally
+                                      if (value) {
+                                        const mat = resolveMaterialLayer(value);
+                                        if (mat) {
+                                          updateField(groupKey, mat.TbMatCapGmp);
+                                        }
                                       }
 
                                       markFieldAsTouched(materialKey);
@@ -5904,28 +5916,64 @@ if (!project) {
                                     }}
                                     onBlur={() => markFieldAsTouched(materialKey)}
                                     error={getError(materialKey)}
-                                    options={groupOptions}
-                                    disabled={!canEditStructure || !group}
-                                    placeholder="-- Seleccione tipo --"
+                                    placeholder="-- Seleccione material --"
+                                    options={MATERIAL_LAYER_OPTIONS}
+                                    disabled={!canEditStructure}
                                   />
-                                  <FormInput
-                                    label="Micraje *"
-                                    value={form[micronKey] as string}
-                                    onChange={(value) => updateField(micronKey, value)}
-                                    onBlur={() => markFieldAsTouched(micronKey)}
-                                    error={getError(micronKey)}
-                                    disabled={!canEditStructure || !isMicronFree}
-                                    placeholder={isMicronFree ? "Ingrese micraje" : "Auto"}
-                                  />
-                                  <FormInput
-                                    label="Gramaje *"
-                                    value={form[grammageKey] as string}
-                                    onChange={(value) => updateField(grammageKey, value)}
-                                    onBlur={() => markFieldAsTouched(grammageKey)}
-                                    error={getError(grammageKey)}
-                                    disabled={!canEditStructure || !isMicronFree}
-                                    placeholder={isMicronFree ? "Ingrese gramaje" : "Auto"}
-                                  />
+
+                                  {selectedMaterialCode && (
+                                    <>
+                                      {micronControl.mode === "VALOR" && (
+                                        <FormSelect
+                                          label={`Micraje ${layer}`}
+                                          value={selectedMicron}
+                                          onChange={(value) => updateField(micronKey, value)}
+                                          onBlur={() => markFieldAsTouched(micronKey)}
+                                          error={getError(micronKey)}
+                                          options={micronControl.options.map((option) => ({
+                                            value: option.value,
+                                            label: `${option.value} µm`,
+                                          }))}
+                                          placeholder="Opcional"
+                                          disabled={!canEditStructure}
+                                        />
+                                      )}
+
+                                      {micronControl.mode === "RANGO" && (
+                                        <FormInput
+                                          label={`Micraje ${layer} (${micronControl.minValue}-${micronControl.maxValue} µm)`}
+                                          value={selectedMicron}
+                                          onChange={(value) => updateField(micronKey, value)}
+                                          onBlur={() => markFieldAsTouched(micronKey)}
+                                          error={getError(micronKey)}
+                                          placeholder={`${micronControl.minValue}-${micronControl.maxValue} µm`}
+                                          disabled={!canEditStructure}
+                                        />
+                                      )}
+
+                                      {micronControl.mode === "NONE" && (
+                                        <FormInput
+                                          label={`Micraje ${layer}`}
+                                          value={selectedMicron}
+                                          onChange={(value) => updateField(micronKey, value)}
+                                          onBlur={() => markFieldAsTouched(micronKey)}
+                                          error={getError(micronKey)}
+                                          placeholder="Opcional (µm)"
+                                          disabled={!canEditStructure}
+                                        />
+                                      )}
+
+                                      <FormInput
+                                        label={`Gramaje ${layer}`}
+                                        value={form[grammageKey] as string}
+                                        onChange={() => { }}
+                                        onBlur={() => markFieldAsTouched(grammageKey)}
+                                        error={getError(grammageKey)}
+                                        placeholder="Calculado automáticamente"
+                                        disabled={true}
+                                      />
+                                    </>
+                                  )}
                                 </div>
                               </div>
                             );

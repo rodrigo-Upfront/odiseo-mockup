@@ -28,6 +28,15 @@ import {
   normalizeUnitMeasureCode,
 } from "../../data/unitMeasureCatalog";
 import {
+  getActiveMaterialGroupOptions,
+  getMaterialLayerOptionsByGroup,
+  getMicronFrontendControl,
+  getMicronRecordsByMaterial,
+  resolveMaterialLayer,
+  buildLayerTechnicalSnapshot,
+  type MicronFrontendControl,
+} from "../../data/productMaterialCatalog";
+import {
   requiresOriginProduct,
   getAllowedOriginLifecycle,
   getOriginProductHelpText,
@@ -96,86 +105,39 @@ const getCausalOptions = (classification: string) => {
   return getActiveModificationOptionsByClassification(normalized);
 };
 
-const MATERIAL_MICRON_CONFIG: Record<
-  string,
-  {
-    label: string;
-    micronOptions?: string[];
-    defaultMicron?: string;
+// Get material options from catalog
+const getMaterialOptions = () => {
+  const groups = getActiveMaterialGroupOptions();
+  const allMaterials: Array<{ value: string; label: string; materialName: string }> = [];
+
+  for (const group of groups) {
+    const materials = getMaterialLayerOptionsByGroup(group.value);
+    allMaterials.push(...materials.map(m => ({
+      value: m.code,
+      label: m.materialName,
+      materialName: m.materialName,
+    })));
   }
-> = {
-  BOPP: {
-    label: "BOPP",
-    micronOptions: ["13.5", "15", "17", "20", "25", "27", "30", "35"],
-  },
-  PET: {
-    label: "PET / Poliéster",
-    micronOptions: ["10", "12"],
-    defaultMicron: "12",
-  },
-  BOPA: {
-    label: "BOPA / Nylon",
-    micronOptions: ["15"],
-    defaultMicron: "15",
-  },
-  PAPEL: {
-    label: "Papel",
-    micronOptions: ["40", "60", "70"],
-  },
-  COEX: {
-    label: "COEX",
-    micronOptions: [],
-  },
-  ALUMINIO: {
-    label: "Aluminio / Foil",
-    micronOptions: ["7", "8", "9"],
-    defaultMicron: "7",
-  },
-  AMPRIMA: {
-    label: "AmPrima",
-    micronOptions: ["25"],
-  },
-  PPCAST: {
-    label: "PP Cast",
-    micronOptions: ["20", "25", "30", "60"],
-  },
-  PE: {
-    label: "PE / Polietileno",
-    micronOptions: ["70", "80", "90"],
-  },
-  PE_SELLANTE: {
-    label: "PE sellante",
-    micronOptions: ["70", "80", "90"],
-    defaultMicron: "80",
-  },
-  TERMOFORMADOS: {
-    label: "Termoformados",
-    micronOptions: ["75", "90", "100", "110", "150", "178", "200"],
-  },
+
+  return allMaterials;
 };
 
-const MATERIAL_OPTIONS = Object.entries(MATERIAL_MICRON_CONFIG).map(
-  ([value, config]) => ({
-    value,
-    label: config.label,
-  }),
-);
+const MATERIAL_OPTIONS = getMaterialOptions();
 
-const getMaterialLabel = (material: string) =>
-  MATERIAL_MICRON_CONFIG[material]?.label || material;
-
-const getMicronOptionsByMaterial = (material: string): string[] => {
-  return MATERIAL_MICRON_CONFIG[material]?.micronOptions ?? [];
+const getMaterialLabel = (materialCode: string): string => {
+  const material = resolveMaterialLayer(materialCode);
+  if (!material) return materialCode;
+  return material.TbMatCapNom;
 };
 
-const getDefaultMicronByMaterial = (material: string): string => {
-  return MATERIAL_MICRON_CONFIG[material]?.defaultMicron ?? "";
+const getMicronControlForMaterial = (materialCode: string): MicronFrontendControl => {
+  return getMicronFrontendControl(materialCode);
 };
 
-const formatLayerForTechnicalName = (material: string, micron?: string): string => {
-  const label = getMaterialLabel(material);
-  if (!micron || !material) return label;
-  return `${label} ${micron} µ`;
+const formatLayerForTechnicalName = (materialCode: string, micron?: string): string => {
+  const label = getMaterialLabel(materialCode);
+  if (!micron || !materialCode) return label;
+  return `${label} ${micron} µm`;
 };
 
 const UNIT_OPTIONS = getActiveUnitMeasureOptions();
@@ -873,17 +835,10 @@ const normalizeCausalValue = (value: string): string => {
 };
 
 const normalizeMaterialValue = (value: unknown): string => {
-  const normalized = normalizeText(value);
+  if (!value) return "";
 
-  if (!normalized) return "";
-
-  const entry = Object.entries(MATERIAL_MICRON_CONFIG).find(
-    ([materialCode, config]) =>
-      normalizeText(materialCode) === normalized ||
-      normalizeText(config.label) === normalized,
-  );
-
-  return entry ? normalizeText(entry[0]) : normalized;
+  const material = resolveMaterialLayer(value);
+  return material ? material.TbMatCapCod : String(value);
 };
 
 // Normalizar valor de unidad usando el catálogo TABUNIMEDODISEO
@@ -2575,10 +2530,8 @@ const handleLayerChange = (index: number, value: string) => {
   }));
 
   if (value) {
-    const defaultMicron = getDefaultMicronByMaterial(value);
-    if (defaultMicron) {
-      setLayerMicronValue(index, defaultMicron);
-    }
+    // Clear micron when material changes to let user select based on available options
+    setLayerMicronValue(index, "");
     setSimilarityMatches([]);
     setSelectedReference(null);
   } else {
@@ -2738,13 +2691,18 @@ const handleRemoveLastLayer = () => {
         ? "Modificado"
         : "Nuevo";
 
-      // Helper para extraer material group
-      const extractMaterialGroup = (material: string): string => {
-        if (!material) return "";
-        const groups = ["BOPP", "PET", "BOPA", "PAPEL", "COEX", "ALUMINIO", "AMPRIMA", "PPCAST", "TERMOFORMADOS"];
-        const found = groups.find(group => material.toUpperCase().includes(group));
-        return found || "";
+      // Helper para extraer material group desde el catálogo
+      const extractMaterialGroup = (materialCode: string): string => {
+        if (!materialCode) return "";
+        const material = resolveMaterialLayer(materialCode);
+        return material ? material.TbMatCapGmp : "";
       };
+
+      // Calcular snapshots para cada capa una sola vez
+      const layer1Snapshot = layer1 ? buildLayerTechnicalSnapshot({ materialValue: layer1, micronValue: layer1Micron }) : null;
+      const layer2Snapshot = layer2 ? buildLayerTechnicalSnapshot({ materialValue: layer2, micronValue: layer2Micron }) : null;
+      const layer3Snapshot = layer3 ? buildLayerTechnicalSnapshot({ materialValue: layer3, micronValue: layer3Micron }) : null;
+      const layer4Snapshot = layer4 ? buildLayerTechnicalSnapshot({ materialValue: layer4, micronValue: layer4Micron }) : null;
 
       const createdProject = createProjectFromPortfolioSafe({
         portfolio: selectedPortfolio!,
@@ -2772,29 +2730,61 @@ const handleRemoveLastLayer = () => {
           descripcionNecesidad: descripcion.trim(),
           projectDescription: descripcion.trim(),
 
-          layer1Material: layer1,
-          layer1MaterialLabel: getMaterialLabel(layer1),
-          layer1Micraje: layer1Micron || undefined,
-          layer1Micron: layer1Micron || undefined,
-          layer1MaterialGroup: extractMaterialGroup(layer1),
+          ...(layer1Snapshot && {
+            layer1Snapshot,
+            layer1Material: layer1,
+            layer1MaterialCode: layer1,
+            layer1MaterialLabel: layer1Snapshot.materialName,
+            layer1MaterialId: layer1Snapshot.materialId,
+            layer1MaterialGroup: layer1Snapshot.materialGroup,
+            layer1Micraje: layer1Micron || undefined,
+            layer1Micron: layer1Micron || undefined,
+            layer1MicronCode: layer1Snapshot.micronCode,
+            layer1MicronType: layer1Snapshot.micronType,
+            layer1Grammage: layer1Snapshot.grammage,
+          }),
 
-          layer2Material: layer2 || undefined,
-          layer2MaterialLabel: layer2 ? getMaterialLabel(layer2) : undefined,
-          layer2Micraje: layer2Micron || undefined,
-          layer2Micron: layer2Micron || undefined,
-          layer2MaterialGroup: layer2 ? extractMaterialGroup(layer2) : undefined,
+          ...(layer2Snapshot && {
+            layer2Snapshot,
+            layer2Material: layer2,
+            layer2MaterialCode: layer2,
+            layer2MaterialLabel: layer2Snapshot.materialName,
+            layer2MaterialId: layer2Snapshot.materialId,
+            layer2MaterialGroup: layer2Snapshot.materialGroup,
+            layer2Micraje: layer2Micron || undefined,
+            layer2Micron: layer2Micron || undefined,
+            layer2MicronCode: layer2Snapshot.micronCode,
+            layer2MicronType: layer2Snapshot.micronType,
+            layer2Grammage: layer2Snapshot.grammage,
+          }),
 
-          layer3Material: layer3 || undefined,
-          layer3MaterialLabel: layer3 ? getMaterialLabel(layer3) : undefined,
-          layer3Micraje: layer3Micron || undefined,
-          layer3Micron: layer3Micron || undefined,
-          layer3MaterialGroup: layer3 ? extractMaterialGroup(layer3) : undefined,
+          ...(layer3Snapshot && {
+            layer3Snapshot,
+            layer3Material: layer3,
+            layer3MaterialCode: layer3,
+            layer3MaterialLabel: layer3Snapshot.materialName,
+            layer3MaterialId: layer3Snapshot.materialId,
+            layer3MaterialGroup: layer3Snapshot.materialGroup,
+            layer3Micraje: layer3Micron || undefined,
+            layer3Micron: layer3Micron || undefined,
+            layer3MicronCode: layer3Snapshot.micronCode,
+            layer3MicronType: layer3Snapshot.micronType,
+            layer3Grammage: layer3Snapshot.grammage,
+          }),
 
-          layer4Material: layer4 || undefined,
-          layer4MaterialLabel: layer4 ? getMaterialLabel(layer4) : undefined,
-          layer4Micraje: layer4Micron || undefined,
-          layer4Micron: layer4Micron || undefined,
-          layer4MaterialGroup: layer4 ? extractMaterialGroup(layer4) : undefined,
+          ...(layer4Snapshot && {
+            layer4Snapshot,
+            layer4Material: layer4,
+            layer4MaterialCode: layer4,
+            layer4MaterialLabel: layer4Snapshot.materialName,
+            layer4MaterialId: layer4Snapshot.materialId,
+            layer4MaterialGroup: layer4Snapshot.materialGroup,
+            layer4Micraje: layer4Micron || undefined,
+            layer4Micron: layer4Micron || undefined,
+            layer4MicronCode: layer4Snapshot.micronCode,
+            layer4MicronType: layer4Snapshot.micronType,
+            layer4Grammage: layer4Snapshot.grammage,
+          }),
 
           estructuraCalculada,
           structureType: estructuraCalculada,
@@ -3639,8 +3629,8 @@ const handleRemoveLastLayer = () => {
     const isFirstLayer = index === 0;
     const selectedMaterial = getLayerValue(index);
     const selectedMicron = getLayerMicronValue(index);
-    const micronOptions = getMicronOptionsByMaterial(selectedMaterial);
-    const hasMicronOptions = micronOptions.length > 0;
+    const micronControl = getMicronControlForMaterial(selectedMaterial);
+    const isDisabled = !canEditMateriales || (isInheritedFromBase && !(isProductoNuevo(motivo) && causal.includes("Nueva estructura")));
 
     return (
       <div
@@ -3648,36 +3638,48 @@ const handleRemoveLastLayer = () => {
         className="rounded-xl border border-slate-200 bg-slate-50/60 p-3"
       >
         <FormSelect
-          label={`Capa ${layerNumber}`}
+          label="Tipo de material por capa"
           value={selectedMaterial}
           onChange={(value) => handleLayerChange(index, value)}
           options={MATERIAL_OPTIONS}
           placeholder="Material"
           error={isFirstLayer ? errors.layer1 : undefined}
-          disabled={!canEditMateriales || (isInheritedFromBase && !(isProductoNuevo(motivo) && causal.includes("Nueva estructura")))}
+          disabled={isDisabled}
         />
 
         {selectedMaterial && (
           <div className="mt-2">
-            {hasMicronOptions ? (
+            {micronControl.mode === "VALOR" && (
               <FormSelect
                 label={`Micraje ${layerNumber}`}
                 value={selectedMicron}
                 onChange={(value) => setLayerMicronValue(index, value)}
-                options={micronOptions.map((option) => ({
-                  value: option,
-                  label: `${option} µ`,
+                options={micronControl.options.map((option) => ({
+                  value: option.value,
+                  label: `${option.value} µm`,
                 }))}
                 placeholder="Opcional"
-                disabled={!canEditMateriales || (isInheritedFromBase && !(isProductoNuevo(motivo) && causal.includes("Nueva estructura")))}
+                disabled={isDisabled}
               />
-            ) : (
+            )}
+            {micronControl.mode === "RANGO" && (
+              <div>
+                <FormInput
+                  label={`Micraje ${layerNumber} (${micronControl.minValue}-${micronControl.maxValue} µm)`}
+                  value={selectedMicron}
+                  onChange={(value) => setLayerMicronValue(index, value)}
+                  placeholder={`${micronControl.minValue}-${micronControl.maxValue} µm`}
+                  disabled={isDisabled}
+                />
+              </div>
+            )}
+            {micronControl.mode === "NONE" && (
               <FormInput
                 label={`Micraje ${layerNumber}`}
                 value={selectedMicron}
                 onChange={(value) => setLayerMicronValue(index, value)}
-                placeholder="Opcional (µ)"
-                disabled={!canEditMateriales || (isInheritedFromBase && !(isProductoNuevo(motivo) && causal.includes("Nueva estructura")))}
+                placeholder="Opcional (µm)"
+                disabled={isDisabled}
               />
             )}
           </div>
