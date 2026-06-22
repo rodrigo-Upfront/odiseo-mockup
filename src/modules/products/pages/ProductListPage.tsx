@@ -377,6 +377,15 @@ export default function ProductListPage() {
         project.wrappingName,
         (project as any).wrapping
       );
+      const plantOriginName = getText(
+        project.plantaName,
+        project.plantName,
+        relatedPortfolio?.plantaName,
+        relatedPortfolio?.plantName,
+        relatedPortfolio?.pl,
+        (project as any).plantaName,
+        (project as any).plantName
+      );
       const blueprintFormat = getText(
         project.blueprintFormat,
         (project as any).formatoPlano,
@@ -434,6 +443,7 @@ export default function ProductListPage() {
         portfolioCodeLabel: portfolioCode,
         portfolioNameLabel: portfolioName,
         classification,
+        plantOriginName,
         wrappingName,
         blueprintFormat,
         skuCode,
@@ -761,7 +771,12 @@ export default function ProductListPage() {
               <tr className="bg-brand-primary text-white">
                 <SortableHeader label="Código SKU" sortKey="code" />
                 <SortableHeader label="Producto" sortKey="projectName" />
-                <SortableHeader label="Código SKU actual" sortKey="skuCode" />
+                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide">
+                  Planta de Origen
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide">
+                  Envoltura
+                </th>
                 <SortableHeader label="Cliente" sortKey="clientName" />
                 <SortableHeader label="Responsable" sortKey="responsible" />
                 <SortableHeader label="Estado ODISEO" sortKey="status" />
@@ -806,8 +821,12 @@ export default function ProductListPage() {
                     </div>
                   </td>
 
-                  <td className="whitespace-nowrap px-4 py-3 text-sm font-mono text-slate-600">
-                    {item.skuCode || "—"}
+                  <td className="px-4 py-3 text-sm font-medium text-slate-700">
+                    {item.plantOriginName || "—"}
+                  </td>
+
+                  <td className="px-4 py-3 text-sm font-medium text-slate-700">
+                    {item.wrappingName || "—"}
                   </td>
 
                   <td className="px-4 py-3 text-sm font-medium text-slate-700">
@@ -896,7 +915,7 @@ export default function ProductListPage() {
 
               {filteredProjects.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-6 py-14 text-center">
+                  <td colSpan={10} className="px-6 py-14 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <div className="mb-3 rounded-full bg-slate-100 p-3">
                         <BriefcaseBusiness size={26} className="text-slate-400" />
