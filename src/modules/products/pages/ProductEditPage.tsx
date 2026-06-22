@@ -4926,24 +4926,16 @@ if (!project) {
                   </div>
 
                   {/* ========== RESULTADO CALCULADO ========== */}
-                  {(estructuraCalculada || nombreTecnicoCalculado) && (
+                  {nombreTecnicoCalculado && (
                     <div className="rounded-xl border border-green-100 bg-green-50/50 p-4 mt-4">
                       <h4 className="mb-3 border-b border-green-100 pb-2 text-sm font-bold text-green-700">
                         Resultado
                       </h4>
                       <div className="space-y-2">
-                        {estructuraCalculada && (
-                          <PreviewRow
-                            label="Estructura"
-                            value={estructuraCalculada}
-                          />
-                        )}
-                        {nombreTecnicoCalculado && (
-                          <PreviewRow
-                            label="Nombre técnico"
-                            value={nombreTecnicoCalculado}
-                          />
-                        )}
+                        <PreviewRow
+                          label="Nombre técnico"
+                          value={nombreTecnicoCalculado}
+                        />
                       </div>
                     </div>
                   )}
@@ -5311,7 +5303,7 @@ if (!project) {
                               />
                             </div>
                           ) : (
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                               <FormSelect
                                 label="Formato de Plano *"
                                 value={form.blueprintFormat}
@@ -5322,6 +5314,12 @@ if (!project) {
                                 options={getBlueprintFormatOptions(inheritedWrapping)}
                                 disabled={!inheritedWrapping}
                               />
+                              <div className="pt-5">
+                                <PreviewRow
+                                  label="Estructura"
+                                  value={estructuraCalculada || "—"}
+                                />
+                              </div>
                             </div>
                           )}
                         </div>
