@@ -26,7 +26,7 @@ import {
 } from "../../../shared/data/projectWorkflow";
 import { getActiveExecutiveRecords } from "../../../shared/data/executiveStorage";
 import { getActiveUsers } from "../../../shared/data/userStorage";
-import { getEdagByCodeAndVersion, TECHNICAL_APPLICATION_CATALOG, MATERIAL_PACKAGING_CATALOG } from "../../../shared/data/mockDatabase";
+import { getEdagByCodeAndVersion, TECHNICAL_APPLICATION_CATALOG, MATERIAL_PACKAGING_CATALOG, EXPORT_PACKAGING_CATALOG } from "../../../shared/data/mockDatabase";
 import { isGenericPackingMachine } from "../../../shared/utils/validationUtils";
 import {
   isGuidedFormatEnabled,
@@ -6623,12 +6623,10 @@ if (!project) {
                       }}
                       onBlur={() => markFieldAsTouched("exportProductPackaging")}
                       error={getError("exportProductPackaging")}
-                      options={[
-                        { value: "Caja de exportación", label: "Caja de exportación" },
-                        { value: "Contenedor hermético", label: "Contenedor hermético" },
-                        { value: "Film protector", label: "Film protector" },
-                        { value: "No aplica", label: "No aplica" },
-                      ]}
+                      options={EXPORT_PACKAGING_CATALOG.map((item) => ({
+                        value: item.code,
+                        label: item.name,
+                      }))}
                       placeholder="-- Seleccione --"
                     />
                   </div>

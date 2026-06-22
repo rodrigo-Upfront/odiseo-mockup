@@ -74,6 +74,12 @@ export type CatalogMaterialPackaging = {
   name: string;
 };
 
+export type CatalogExportPackaging = {
+  id: number;
+  code: string;
+  name: string;
+};
+
 export const STATUS_CATALOG: CatalogStatus[] = [
   { id: 1, code: "REG", name: "Registrado" },
   { id: 2, code: "REV", name: "En revisión" },
@@ -4007,6 +4013,11 @@ export const MATERIAL_PACKAGING_CATALOG: CatalogMaterialPackaging[] = [
   { id: 2, code: "C4", name: "C4. Bolsa" },
   { id: 3, code: "C7", name: "C7. Manga" },
   { id: 4, code: "S1", name: "S1. Bls. PEBD, Sobreempaque sacos PEBD" },
+];
+
+export const EXPORT_PACKAGING_CATALOG: CatalogExportPackaging[] = [
+  { id: 1, code: "E3", name: "E3. Maritimo normal" },
+  { id: 2, code: "E4", name: "E4. Maritimo consolidado" },
 ];
 
 export const TECHNICAL_APPLICATION_CATALOG: CatalogTechnicalApplication[] = [
