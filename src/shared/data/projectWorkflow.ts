@@ -33,7 +33,7 @@ export type ProductStatus =
 
 export type SkuLifecycleCode = "A" | "E" | "B" | "P";
 
-export type SkuLifecycleLabel = "Aprobado" | "Muestra" | "Base" | "Portafolio estándar";
+export type SkuLifecycleLabel = "Aprobado" | "Preliminar" | "Base" | "Portafolio estándar";
 
 export type GraphicArtsValidationStatus =
   | "Sin solicitar"
@@ -408,7 +408,7 @@ export function getSkuLifecycleLabel(code: SkuLifecycleCode): SkuLifecycleLabel 
     case "A":
       return "Aprobado";
     case "E":
-      return "Muestra";
+      return "Preliminar";
     case "B":
       return "Base";
   }
