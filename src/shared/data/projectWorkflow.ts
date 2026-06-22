@@ -29,7 +29,8 @@ export type ProjectStatus =
 export type ProductStatus =
   | "Registrado"
   | "En Preparación"
-  | "Completado";
+  | "Completado"
+  | "Dado de alta";
 
 export type SkuLifecycleCode = "A" | "E" | "B" | "P";
 
@@ -412,6 +413,41 @@ export function getSkuLifecycleLabel(code: SkuLifecycleCode): SkuLifecycleLabel 
     case "B":
       return "Base";
   }
+}
+
+export function getProductOdiseoStatus(product: any): ProductStatus {
+  if (!product) return "Registrado";
+
+  // Si tiene código del Sistema Integral = "Dado de alta"
+  const siProductCode = String(product.siProductCode || "").trim();
+  if (siProductCode) {
+    return "Dado de alta";
+  }
+
+  // Obtener stage/paso actual
+  const stage = String(product.stage || "").trim();
+  const rawStatus = String(product.status || "").trim().toLowerCase();
+
+  // P1 completado = "Registrado"
+  if (!stage || stage === "P1_FICHA_PROYECTO" || stage === "P1_PREPARACION_FICHA_PROYECTO") {
+    return "Registrado";
+  }
+
+  // P2-P4: depende de si está completado
+  // Si el status indica completado, retornar "Completado"
+  if (rawStatus.includes("validado") ||
+      rawStatus.includes("ficha completa") ||
+      rawStatus.includes("aprobado") ||
+      rawStatus.includes("completado")) {
+    return "Completado";
+  }
+
+  // Cualquier otro estado en P2-P4 = "En Preparación"
+  if (stage.startsWith("P2_") || stage.startsWith("P3_") || stage.startsWith("P4_")) {
+    return "En Preparación";
+  }
+
+  return "Registrado";
 }
 
 export function resolveTechnicalSubAreaBySubclassification(

@@ -22,6 +22,7 @@ import {
   requiresManualGraphicArtsValidation,
   resolveTechnicalSubAreaBySubclassification,
   resolveTechnicalSubAreaByProjectType,
+  getProductOdiseoStatus,
 } from "../../../shared/data/projectWorkflow";
 import { getActiveExecutiveRecords } from "../../../shared/data/executiveStorage";
 import { getActiveUsers } from "../../../shared/data/userStorage";
@@ -70,6 +71,7 @@ import FormSelect from "../../../shared/components/forms/FormSelect";
 import FormTextarea from "../../../shared/components/forms/FormTextarea";
 import FormActionButtons from "../../../shared/components/forms/FormActionButtons";
 import PreviewRow from "../../../shared/components/display/PreviewRow";
+import ProductOdiseoStatusBadge from "../../../shared/components/display/ProductOdiseoStatusBadge";
 import CommercialExecutiveMultiSearch from "../../../shared/components/forms/CommercialExecutiveMultiSearch";
 import ProjectPlansUploadSection from "../components/ProjectPlansUploadSection";
 import CustomerTechnicalSpecUploadSection from "../components/CustomerTechnicalSpecUploadSection";
@@ -2651,6 +2653,11 @@ export default function ProductEditPage() {
     form.productCode,
     originalProject,
   ]);
+
+  // Calculate ODISEO status
+  const odiseoStatus = useMemo(() => {
+    return getProductOdiseoStatus(originalProject);
+  }, [originalProject]);
 
   useEffect(() => {
     if (!projectCode) {
@@ -6624,6 +6631,11 @@ if (!project) {
                   label="SKU"
                   value={displaySkuCode || "—"}
                 />
+
+                <div className="py-2">
+                  <div className="text-xs font-semibold text-slate-600 mb-1">Estado ODISEO</div>
+                  <ProductOdiseoStatusBadge status={odiseoStatus} />
+                </div>
 
                 {form.skuLifecycleCode && (
                   <PreviewRow

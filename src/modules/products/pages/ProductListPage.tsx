@@ -20,10 +20,12 @@ import {
   normalizeProductStatus,
   normalizeSkuLifecycleCode,
   getSkuLifecycleLabel,
+  getProductOdiseoStatus,
   type ProductStatus,
   type SkuLifecycleCode,
 } from "../../../shared/data/projectWorkflow";
 import ProjectStatusBadge from "../../../shared/components/display/ProjectStatusBadge";
+import ProductOdiseoStatusBadge from "../../../shared/components/display/ProductOdiseoStatusBadge";
 import ActionButton from "../../../shared/components/buttons/ActionButton";
 import { ProductActionButton } from "../../../shared/components/ProductActionButton";
 
@@ -322,6 +324,7 @@ export default function ProductListPage() {
     return projects.map((project) => {
       const normalizedProject = normalizeProjectWorkflow(project);
       const code = getText(project.code, project.id);
+      const odiseoStatus = getProductOdiseoStatus(project);
       const normalizedStatus = normalizeProductStatus(project.status);
 
       const portfolioCode = getText(
@@ -439,6 +442,7 @@ export default function ProductListPage() {
         responsibleArea,
         responsibleName,
         responsibleLabel,
+        odiseoStatus,
         currentAction: getCurrentActionLabel(normalizedProject),
         updatedAtLabel,
         updatedByLabel,
@@ -817,7 +821,7 @@ export default function ProductListPage() {
                   </td>
 
                   <td className="px-4 py-3 text-sm">
-                    <ProjectStatusBadge status={item.status} />
+                    <ProductOdiseoStatusBadge status={item.odiseoStatus} />
                   </td>
 
                   <td className="px-4 py-3 text-sm">
