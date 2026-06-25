@@ -669,7 +669,7 @@ export default function ProductCreatePage() {
           referenceEdagCode: original.previousEdagCode || "",
           referenceEdagVersion: original.previousEdagVersion || "",
           edagCode: original.edagCode || "",
-          edagVersion: original.edagVersion || "",
+          edagVersion: String(original.edagVersion || ""),
           specialDesignSpecs: original.specialDesignSpecs || "",
           specialDesignComments: original.specialDesignComments || "",
           hasReferenceStructure: original.hasReferenceStructure === true ? "Sí" : original.hasReferenceStructure === false ? "No" : (original.hasReferenceStructure || "No"),

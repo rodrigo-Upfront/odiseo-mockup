@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { FolderPlus, Upload } from "lucide-react";
 import NewActionDropdown from "./NewActionDropdown";
 import ProductInitialCreateModal from "./modals/ProductInitialCreateModal";
+import BulkProductImportModal from "./modals/BulkProductImportModal";
 import type { NewActionOption } from "./NewActionDropdown";
 
 export interface PortfolioContext {
@@ -35,6 +36,7 @@ export function ProductActionButton({
 }: ProductActionButtonProps) {
   const navigate = useNavigate();
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   const options = useMemo<NewActionOption[]>(() => {
     const baseState = source === "portfolio" && portfolioContext
@@ -57,16 +59,10 @@ export function ProductActionButton({
         description: "Carga masiva de productos desde plantilla.",
         enabled: true,
         icon: <Upload size={17} />,
-        onClick: () => {
-          if (baseState) {
-            navigate("/products/import", { state: baseState });
-          } else {
-            navigate("/products/import");
-          }
-        },
+        onClick: () => setShowImportModal(true),
       },
     ];
-  }, [navigate, source, portfolioContext]);
+  }, [source, portfolioContext]);
 
   return (
     <>
@@ -81,6 +77,16 @@ export function ProductActionButton({
           setShowCreateModal(false);
           onProductCreated?.();
         }}
+      />
+
+      <BulkProductImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImportComplete={() => {
+          setShowImportModal(false);
+          onProductCreated?.();
+        }}
+        portfolioContext={portfolioContext}
       />
     </>
   );

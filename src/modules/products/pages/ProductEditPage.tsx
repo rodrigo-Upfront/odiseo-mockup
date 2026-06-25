@@ -2789,7 +2789,7 @@ if (!project) {
       specialDesignSpecs: project.specialDesignSpecs || "No aplica",
       specialDesignComments: project.specialDesignComments || "",
       edagCode: project.edagCode || "",
-      edagVersion: project.edagVersion || "",
+      edagVersion: String(project.edagVersion || ""),
       designPlanType: (project as any).designPlanType || "",
       designPlanComments: (project as any).designPlanComments || "",
       colorObjectiveCode: getAnyProjectValue(project, [

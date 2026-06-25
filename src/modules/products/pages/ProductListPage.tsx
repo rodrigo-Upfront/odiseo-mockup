@@ -379,11 +379,8 @@ export default function ProductListPage() {
       );
       const plantOriginName = getText(
         project.plantaName,
-        project.plantName,
         relatedPortfolio?.plantaName,
-        relatedPortfolio?.plantName,
         relatedPortfolio?.pl,
-        (project as any).plantaName,
         (project as any).plantName
       );
       const blueprintFormat = getText(

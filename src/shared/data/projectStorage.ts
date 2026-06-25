@@ -1321,8 +1321,6 @@ export function createProjectFromPortfolio(params: {
   const project: ProjectRecord = {
     code: projectCode,
     id: technicalRequestCode,
-    projectCode: technicalRequestCode,
-    projectRequestCode: technicalRequestCode,
 
     portfolioCode: params.portfolio.codigo || params.portfolio.code || params.portfolio.id || "",
     portfolioName: params.portfolio.nombre || params.portfolio.name || params.portfolio.nom || "",
@@ -1433,13 +1431,10 @@ export function createProjectFromPortfolio(params: {
     // SKU codes (from ProductInitialCreateModal)
     skuCode: (params.initialData as any).skuCode || "",
     currentSkuCode: (params.initialData as any).currentSkuCode || (params.initialData as any).skuCode || "",
-    productCode: (params.initialData as any).productCode || (params.initialData as any).skuCode || "",
-    codigoSku: (params.initialData as any).codigoSku || (params.initialData as any).skuCode || "",
-    codigoProducto: (params.initialData as any).codigoProducto || (params.initialData as any).skuCode || "",
-    codigoProductoOdiseo: (params.initialData as any).codigoProductoOdiseo || (params.initialData as any).skuCode || "",
+    siProductCode: (params.initialData as any).productCode || (params.initialData as any).skuCode || "",
     skuSequence: (params.initialData as any).skuSequence || undefined,
     skuLifecycleCode: (params.initialData as any).skuLifecycleCode || (params.initialData as any).skuLifecycleCode || "E",
-    skuLifecycleName: (params.initialData as any).skuLifecycleName || "Preliminar",
+    skuLifecycleLabel: (params.initialData as any).skuLifecycleLabel || "Muestra",
     skuVersion: (params.initialData as any).skuVersion || 0,
 
     // EDAG and EM codes
