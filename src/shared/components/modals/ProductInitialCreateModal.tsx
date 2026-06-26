@@ -470,6 +470,7 @@ const getAllPortfolioRecordsSafe = (): PortfolioRecord[] => {
   const api = getStorageApi(portfolioStorage);
 
   const functionNames = [
+    "getPortfolioDisplayRecords",
     "getPortfolioRecords",
     "getAllPortfolioRecords",
     "getPortfolios",
