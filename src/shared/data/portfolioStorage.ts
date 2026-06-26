@@ -43,7 +43,7 @@ export const INITIAL_PORTFOLIOS: PortfolioRecord[] = [
   {
     id: "PO-000001",
     codigo: "PO-000001",
-    clientCode: "CLI-000001",
+    clientCode: "CL-000001",
     clientName: "Alicorp S.A.A.",
     ejecutivoId: 43,
     ejecutivoName: "EDUARDO POSADA",
@@ -109,7 +109,7 @@ export const INITIAL_PORTFOLIOS: PortfolioRecord[] = [
   {
     id: "PO-000004",
     codigo: "PO-000004",
-    clientCode: "CLI-000001",
+    clientCode: "CL-000001",
     clientName: "Alicorp S.A.A.",
     ejecutivoId: 43,
     ejecutivoName: "EDUARDO POSADA",
